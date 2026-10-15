@@ -6,7 +6,7 @@
 | --- | --- |
 | Product name | Herdr Workbench |
 | Marketplace display name | Herdr Workbench — Git Worktrees & CLI Agents |
-| Publisher ID | `tynamix` — register this ID before uploading |
+| Publisher ID | `tynamix` (Tynamix) |
 | Extension name | `vscode-herdr` |
 | Extension ID | `tynamix.vscode-herdr` |
 | Initial version | `0.1.0`, marked as a preview |
@@ -25,6 +25,8 @@ npm run package:marketplace
 ```
 
 Upload **`dist/herdr-workbench-marketplace.vsix`**. This package is produced by Microsoft's official `@vscode/vsce` tool. It includes the production code, final icon, MIT license, README, changelog, support instructions and documentation screenshots. Development profiles, demo scripts, tests, design drafts and development dependencies are excluded.
+
+The Marketplace icon is the 256 × 256 PNG at `media/herdr-marketplace-icon.png`. Keep it below the Marketplace's 1024 KB limit; `npm run check` verifies that limit. The larger approved artwork is retained separately for future exports.
 
 `npm run package` remains an offline packager for local installation. Use the package produced by `package:marketplace` for publication.
 

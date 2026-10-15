@@ -16,6 +16,7 @@ for (const menu of Object.values(manifest.contributes.menus)) {
 }
 if (!fs.existsSync(path.join(root, manifest.main))) throw new Error('Extension entry point is missing.');
 if (manifest.icon && !fs.existsSync(path.join(root, manifest.icon))) throw new Error('Extension icon is missing.');
+if (manifest.icon && fs.statSync(path.join(root, manifest.icon)).size > 1024 * 1024) throw new Error('Marketplace icon must not exceed 1024 KB.');
 const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
 for (const match of readme.matchAll(/!\[[^\]]*\]\(([^)]+)\)|<img\s[^>]*src="([^"]+)"/g)) {
   const target = match[1] || match[2];

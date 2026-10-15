@@ -2,7 +2,7 @@
   "name": "vscode-herdr",
   "displayName": "Herdr Workbench — Git Worktrees & CLI Agents",
   "description": "Manage Git worktrees and persistent CLI agent sessions across projects, with native VS Code terminals, diffs and agent status.",
-  "icon": "media/herdr-marketplace-terminals-v2.png",
+  "icon": "media/herdr-marketplace-icon.png",
   "version": "0.1.0",
   "publisher": "tynamix",
   "author": "Tynamix",

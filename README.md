@@ -1,4 +1,4 @@
-<img src="media/herdr-marketplace-terminals-v2.png" width="96" alt="Herdr Workbench logo: four terminal prompts forming an H">
+<img src="media/herdr-marketplace-icon.png" width="96" alt="Herdr Workbench logo: four terminal prompts forming an H">
 
 # Herdr Workbench
 
@@ -51,7 +51,9 @@ The installed extension runs directly in VS Code without a separate build or run
 
 ## Installation
 
-To create an installable extension package, run this command in the repository:
+Install [Herdr Workbench from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=tynamix.vscode-herdr), or search for **Herdr Workbench** in VS Code's Extensions view. Git, herdr and your chosen agent CLIs must also be installed on the extension host.
+
+To create an installable extension package from source, run this command in the repository:
 
 ```sh
 npm run package
