@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [{
+    "name": "Herdr Workbench",
+    "type": "node",
+    "request": "attach",
+    "address": "127.0.0.1",
+    "port": 9333,
+    "preLaunchTask": "Herdr: Entwicklungsfenster starten",
+    "timeout": 30000,
+    "restart": true,
+    "autoAttachChildProcesses": false,
+    "outFiles": ["${workspaceFolder}/src/**/*.js"],
+    "skipFiles": ["<node_internals>/**"]
+  }]
+}

@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [{
+    "label": "Herdr: Entwicklungsfenster starten",
+    "type": "process",
+    "command": "${execPath}",
+    "args": ["${workspaceFolder}/scripts/dev.js", "${execPath}"],
+    "options": {
+      "cwd": "${workspaceFolder}",
+      "env": { "ELECTRON_RUN_AS_NODE": "1" }
+    },
+    "problemMatcher": [],
+    "presentation": { "reveal": "silent", "panel": "dedicated", "focus": false }
+  }]
+}
