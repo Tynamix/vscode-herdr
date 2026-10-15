@@ -116,7 +116,7 @@ test('counts individual untracked files in new directories and excludes ignored 
 test('invalid branches, refs and existing destinations fail without losing files', async t => {
   const { directory, root } = await fixture(t);
   const destination = path.join(directory, 'never-created');
-  await assert.rejects(createWorktree(root, destination, '--force'), /gültigen/);
+  await assert.rejects(createWorktree(root, destination, '--force'), /valid/);
   await assert.rejects(createWorktree(root, destination, 'bad branch'));
   await assert.rejects(createWorktree(root, destination, 'valid-branch', '--bad-ref'));
   await assert.rejects(fs.access(destination));
@@ -146,10 +146,10 @@ test('refuses main, unknown, locked and dirty worktrees without losing files', a
   const linked = path.join(directory, 'protected worktree');
   await createWorktree(root, linked, 'feature/protected');
   const primary = (await listWorktrees(root))[0].path;
-  await assert.rejects(removeWorktree(linked, primary), /Hauptcheckout/);
-  await assert.rejects(removeWorktree(root, directory), /nicht mehr verfügbar/);
+  await assert.rejects(removeWorktree(linked, primary), /main checkout/);
+  await assert.rejects(removeWorktree(root, directory), /no longer available/);
   await git(root, ['worktree', 'lock', linked]);
-  await assert.rejects(removeWorktree(root, linked), /gesperrt/);
+  await assert.rejects(removeWorktree(root, linked), /locked/);
   await git(root, ['worktree', 'unlock', linked]);
   await fs.writeFile(path.join(linked, 'original.txt'), 'uncommitted\n');
   await assert.rejects(removeWorktree(root, linked));

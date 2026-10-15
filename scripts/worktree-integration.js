@@ -39,7 +39,7 @@ async function run(mode) {
   const driver = path.join(directory, 'driver');
   await fs.mkdir(driver);
   await fs.writeFile(path.join(driver, 'package.json'), JSON.stringify({ name: 'herdr-context-driver', publisher: 'local-test', version: '0.0.1',
-    engines: { vscode: '^1.93.0' }, main: 'index.js', activationEvents: ['onStartupFinished'], extensionDependencies: ['herdr-workbench.vscode-herdr'] }));
+    engines: { vscode: '^1.93.0' }, main: 'index.js', activationEvents: ['onStartupFinished'], extensionDependencies: [`${require('../package.json').publisher}.${require('../package.json').name}`] }));
   await fs.writeFile(path.join(driver, 'index.js'), `const vscode = require('vscode');
 exports.activate = () => { async function step() {
   try { if (await require(${JSON.stringify(path.join(root, 'test', 'worktree-host.js'))}).run()) return vscode.commands.executeCommand('workbench.action.quit'); }

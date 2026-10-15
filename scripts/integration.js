@@ -38,7 +38,7 @@ async function main() {
   await fs.mkdir(driver);
   await fs.writeFile(path.join(driver, 'package.json'), JSON.stringify({
     name: 'herdr-test-driver', publisher: 'local-test', version: '0.0.1', engines: { vscode: '^1.93.0' },
-    main: './index.js', activationEvents: ['onStartupFinished'], extensionDependencies: ['herdr-workbench.vscode-herdr']
+    main: './index.js', activationEvents: ['onStartupFinished'], extensionDependencies: [`${require('../package.json').publisher}.${require('../package.json').name}`]
   }));
   await fs.writeFile(path.join(driver, 'index.js'), `const vscode = require('vscode');
 exports.activate = () => { setTimeout(async () => {

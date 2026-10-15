@@ -22,7 +22,7 @@ class HerdrTerminal {
     let buffer = '';
     this.child.stdout.on('data', chunk => {
       buffer += chunk;
-      if (buffer.length > 16 * 1024 * 1024) return this.finish(new Error('Terminal-Frame ist zu groß.'));
+      if (buffer.length > 16 * 1024 * 1024) return this.finish(new Error('Terminal frame is too large.'));
       let end;
       while ((end = buffer.indexOf('\n')) !== -1) {
         const line = buffer.slice(0, end);
@@ -39,8 +39,8 @@ class HerdrTerminal {
     let errors = '';
     this.child.stderr.on('data', chunk => { errors = (errors + chunk.toString('utf8')).slice(-4000); });
     this.child.on('error', error => this.finish(error));
-    this.child.on('exit', code => this.finish(code ? new Error(errors.trim() || `Terminal-Brücke beendet (${code}).`) : undefined));
-    this.timer = setTimeout(() => this.finish(new Error('Terminal-Brücke wurde nicht bereit.')), 12000);
+    this.child.on('exit', code => this.finish(code ? new Error(errors.trim() || `Terminal bridge exited (${code}).`) : undefined));
+    this.timer = setTimeout(() => this.finish(new Error('Terminal bridge did not become ready.')), 12000);
     this.ready.then(() => clearTimeout(this.timer), () => clearTimeout(this.timer));
   }
 
@@ -55,7 +55,7 @@ class HerdrTerminal {
 
   finish(error) {
     if (this.closed) return;
-    this.rejectReady(error || new Error('Terminal wurde getrennt.'));
+    this.rejectReady(error || new Error('Terminal was disconnected.'));
     if (error) this.writeEmitter.fire(`\r\n${error.message}\r\n`);
     this.close();
     this.disconnected(error);
@@ -74,7 +74,7 @@ class HerdrTerminal {
       const timer = setTimeout(() => { if (child.exitCode === null) child.kill(); }, 1000);
       timer.unref?.();
     }
-    this.rejectReady(new Error('Terminal wurde getrennt.'));
+    this.rejectReady(new Error('Terminal was disconnected.'));
   }
 
   dispose() { this.close(); this.writeEmitter.dispose(); this.closeEmitter.dispose(); }

@@ -107,6 +107,6 @@ test('superseded selections and rejected folder mutations do not claim a success
   assert.equal(await manager.switch(resolved, () => false), false);
   assert.equal(mutations.length, 0);
   vscode.workspace.updateWorkspaceFolders = () => false;
-  await assert.rejects(manager.switch(resolved), /konnte nicht/);
+  await assert.rejects(manager.switch(resolved), /could not/);
   assert.equal(manager.switching, false);
 });

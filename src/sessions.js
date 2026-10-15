@@ -69,7 +69,7 @@ class Sessions {
   }
 
   async start(worktree, project, profile) {
-    if (!this.vscode.workspace.isTrusted) throw new Error('CLI-Sessions brauchen einen vertrauenswürdigen Workspace.');
+    if (!this.vscode.workspace.isTrusted) throw new Error('CLI sessions require a trusted workspace.');
     await this.ready;
     await this.backend.ensure();
     const id = randomUUID();
@@ -88,7 +88,7 @@ class Sessions {
     let command = profile.command;
     if (profile.kind === 'pi') {
       const parsed = commandExecutable(command);
-      if (!parsed) throw new Error('Pi muss direkt über seine ausführbare Datei gestartet werden.');
+      if (!parsed) throw new Error('Pi must be launched directly through its executable.');
       command = command.slice(0, parsed.end) + ' --extension '
         + quoteShell(path.join(this.context.extensionUri.fsPath, 'integrations', 'pi-status.mjs')) + command.slice(parsed.end);
     }
@@ -98,12 +98,12 @@ class Sessions {
     try { await this.backend.run(session.paneId, command); }
     catch (error) {
       this.update(id, { status: 'unknown' });
-      throw new Error(`CLI-Start konnte nicht bestätigt werden. Öffne die vorhandene Session zur Prüfung. ${error.message}`);
+      throw new Error(`CLI launch could not be confirmed. Open the existing session to inspect it. ${error.message}`);
     }
     this.update(id, { status: 'running' });
     await this.refresh();
     try { await this.attach(session); }
-    catch (error) { this.reportError(new Error(`Session läuft im Hintergrund; Terminal konnte nicht verbunden werden: ${error.message}`)); }
+    catch (error) { this.reportError(new Error(`Session is running in the background; terminal could not be attached: ${error.message}`)); }
     return { ...session };
   }
 
@@ -208,18 +208,18 @@ class Sessions {
 
   async focus(id) {
     const session = this.find(id);
-    if (!session) throw new Error('Diese Session gibt es nicht mehr.');
+    if (!session) throw new Error('This session no longer exists.');
     if (session.backend !== 'herdr') {
       const runtime = this.live.get(id);
-      if (!runtime) throw new Error('Für diese alte Session ist kein Terminal verbunden. Bitte eine neue Session starten.');
+      if (!runtime) throw new Error('This legacy session has no attached terminal. Start a new session.');
       this.markSeen(id);
       runtime.terminal.show();
       return;
     }
-    if (session.endedAt) throw new Error('Diese Session wurde beendet und bleibt im Verlauf sichtbar.');
+    if (session.endedAt) throw new Error('This session has ended and remains in history.');
     await this.backend.ensure();
     await this.refresh();
-    if (!session.backendAlive) throw new Error('Diese Session wurde beendet und bleibt im Verlauf sichtbar.');
+    if (!session.backendAlive) throw new Error('This session has ended and remains in history.');
     this.markSeen(id);
     await this.attach(session);
   }
@@ -238,7 +238,7 @@ class Sessions {
     const session = this.find(id);
     if (session?.backend === 'herdr' && session.backendAlive) return this.backend.interrupt(session.paneId);
     const runtime = this.live.get(id);
-    if (!runtime) throw new Error('Für diese Session ist kein Terminal verbunden.');
+    if (!runtime) throw new Error('No terminal is attached to this session.');
     runtime.terminal.sendText('\u0003', false);
   }
 
@@ -255,7 +255,7 @@ class Sessions {
     if (session.backend === 'herdr') {
       // Verify ownership before closing anything in the persistent server.
       await this.refresh();
-      if (!session.backendAlive) throw new Error('Session ist nicht mit herdr verbunden.');
+      if (!session.backendAlive) throw new Error('Session is not connected to herdr.');
       await this.backend.stop(session.workspaceId);
     }
     this.closeTerminal(id);
@@ -266,8 +266,8 @@ class Sessions {
   async forget(id) {
     await this.refresh();
     const session = this.find(id);
-    if (session?.backend === 'herdr' && session.status === 'detached') throw new Error('Herdr ist nicht erreichbar. Verbinde die Session zuerst erneut, um ihren Zustand zu prüfen.');
-    if (session?.backendAlive || this.live.has(id)) throw new Error('Beende zuerst die Session über „Session beenden“.');
+    if (session?.backend === 'herdr' && session.status === 'detached') throw new Error('Herdr is unreachable. Reconnect the session first to verify its state.');
+    if (session?.backendAlive || this.live.has(id)) throw new Error('Stop the session first using “Stop session”.');
     this.items = this.items.filter(item => item.id !== id);
     await this.save();
   }
@@ -277,7 +277,7 @@ class Sessions {
     const session = this.find(id);
     if (!session) return;
     if (session.backend === 'herdr' && !session.endedAt && !session.backendAlive) {
-      throw new Error('Herdr ist nicht erreichbar. Verbinde die Session zuerst erneut, um ihren Zustand zu prüfen.');
+      throw new Error('Herdr is unreachable. Reconnect the session first to verify its state.');
     }
     if (session.endedAt) this.closeTerminal(id);
     else if (session.backendAlive || this.live.has(id)) await this.stop(id);

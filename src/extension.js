@@ -58,8 +58,8 @@ async function activate(context) {
     const working = data.sessions.filter(s => s.indicator.state === 'working').length;
     const questions = data.sessions.filter(s => s.indicator.state === 'blocked').length;
     const done = data.sessions.filter(s => s.indicator.state === 'done').length;
-    status.text = `$(terminal) ${running} Sessions${working ? ` · $(loading~spin) ${working}` : ''}${questions ? ` · ${questions} Fragen` : ''}${done ? ` · ${done} fertig` : ''}`;
-    status.tooltip = 'Herdr: Übersicht aller CLI-Sessions öffnen';
+    status.text = `$(terminal) ${running} session${running === 1 ? '' : 's'}${working ? ` · $(loading~spin) ${working}` : ''}${questions ? ` · ${questions} question${questions === 1 ? '' : 's'}` : ''}${done ? ` · ${done} finished` : ''}`;
+    status.tooltip = 'Herdr: Open all CLI sessions';
   }
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
@@ -74,12 +74,12 @@ async function activate(context) {
     item.contextValue = 'herdrSession';
     item.sessionId = session.id;
     const background = session.backendAlive && !sessions.live.has(session.id);
-    const label = `${model.sessionLabel(session)}${background ? ' · Hintergrund' : ''}`;
+    const label = `${model.sessionLabel(session)}${background ? ' · Background' : ''}`;
     item.description = detailed ? `${session.projectName} · ${label}` : label;
-    item.tooltip = `${session.name}\n${session.worktreePath}\n${session.command}\n${model.statusLabel(session)}${background ? '\nLäuft im Hintergrund · Klicken zum Öffnen des Terminals' : ''}${session.attention !== 'none' ? `\n${model.sessionLabel(session)}` : ''}`;
+    item.tooltip = `${session.name}\n${session.worktreePath}\n${session.command}\n${model.statusLabel(session)}${background ? '\nRunning in background · Click to open terminal' : ''}${session.attention !== 'none' ? `\n${model.sessionLabel(session)}` : ''}`;
     const indicator = model.agentIndicator(session);
     item.iconPath = new vscode.ThemeIcon(indicator.icon, indicator.color ? new vscode.ThemeColor(indicator.color) : undefined);
-    item.command = { command: 'herdr.focusSession', title: 'Terminal öffnen', arguments: [session.id] };
+    item.command = { command: 'herdr.focusSession', title: 'Open terminal', arguments: [session.id] };
     return item;
   }
 
@@ -92,7 +92,7 @@ async function activate(context) {
         tree.id = `project:${project.id}`;
         tree.projectId = project.id;
         tree.contextValue = 'herdrProject';
-        tree.description = project.error ? 'Nicht verfügbar' : `${project.worktrees?.length || 0} Worktrees`;
+        tree.description = project.error ? 'Unavailable' : `${project.worktrees?.length || 0} worktree${project.worktrees?.length === 1 ? '' : 's'}`;
         tree.tooltip = project.error || project.path;
         tree.iconPath = new vscode.ThemeIcon(project.error ? 'warning' : 'repo');
         return tree;
@@ -105,10 +105,10 @@ async function activate(context) {
         tree.projectId = project.id;
         tree.worktreePath = worktree.path;
         tree.contextValue = worktree.isMain ? 'herdrWorktreeMain' : 'herdrWorktree';
-        tree.description = [worktree.path === currentPath ? 'Aktiv' : '', worktree.error ? 'Nicht verfügbar' : `${worktree.changedFiles || 0} Dateien`].filter(Boolean).join(' · ');
+        tree.description = [worktree.path === currentPath ? 'Active' : '', worktree.error ? 'Unavailable' : `${worktree.changedFiles || 0} file${worktree.changedFiles === 1 ? '' : 's'}`].filter(Boolean).join(' · ');
         tree.tooltip = worktree.error || worktree.path;
         tree.iconPath = new vscode.ThemeIcon(worktree.error ? 'warning' : 'git-branch');
-        tree.command = { command: 'herdr.selectWorktree', title: 'Worktree auswählen', arguments: [tree] };
+        tree.command = { command: 'herdr.selectWorktree', title: 'Select worktree', arguments: [tree] };
         return tree;
       });
       if (item.contextValue?.startsWith('herdrWorktree')) return model.sortSessions(sessions.items.filter(s => s.worktreePath === item.worktreePath)).map(s => sessionItem(s));
@@ -170,11 +170,11 @@ async function activate(context) {
     const candidates = projects.flatMap(project => (project.worktrees || []).filter(w => !w.error).map(worktree => ({ project, worktree })));
     const match = candidates.find(candidate => candidate.worktree.path === (requested || currentPath));
     if (match) return match;
-    if (requested) throw new Error('Dieser Worktree ist nicht mehr verfügbar. Bitte aktualisieren.');
+    if (requested) throw new Error('This worktree is no longer available. Refresh the view.');
     const choice = await vscode.window.showQuickPick(candidates.map(candidate => ({
       label: `${candidate.project.name} / ${candidate.worktree.branch || 'detached'}`,
       description: candidate.worktree.path, candidate
-    })), { placeHolder: 'Worktree auswählen' });
+    })), { placeHolder: 'Select worktree' });
     return choice?.candidate;
   }
 
@@ -218,10 +218,10 @@ async function activate(context) {
   command('herdr.refresh', async () => { await Promise.all([refresh(), sessions.refresh()]); });
   command('herdr.addProject', async input => {
     const uri = input instanceof vscode.Uri ? input : (await vscode.window.showOpenDialog({
-      canSelectFiles: false, canSelectFolders: true, canSelectMany: false, openLabel: 'Projekt hinzufügen'
+      canSelectFiles: false, canSelectFolders: true, canSelectMany: false, openLabel: 'Add project'
     }))?.[0];
     if (!uri) return;
-    if (uri.scheme !== 'file') throw new Error('Bitte einen Ordner auf dem Dateisystem des Extension-Hosts wählen.');
+    if (uri.scheme !== 'file') throw new Error('Select a directory on the extension host filesystem.');
     const project = await git.inspectProject(uri.fsPath);
     const existing = projects.find(p => p.id === project.id);
     if (!existing) {
@@ -235,7 +235,7 @@ async function activate(context) {
     const project = projects.find(p => p.id === input?.projectId);
     if (!project) return;
     if (sessions.items.some(s => s.projectId === project.id && (s.backendAlive || sessions.live.has(s.id)))) {
-      throw new Error('Beende zuerst die Sessions dieses Projekts.');
+      throw new Error('Stop this project’s sessions first.');
     }
     projects = projects.filter(p => p.id !== project.id);
     await saveProjects();
@@ -256,7 +256,7 @@ async function activate(context) {
     const accepted = vscode.workspace.updateWorkspaceFolders(folders.length, 0, {
       uri, name: `${resolved.project.name} · ${resolved.worktree.branch || 'detached'}`
     });
-    if (!accepted) throw new Error('Der Workspace konnte nicht erweitert werden.');
+    if (!accepted) throw new Error('The workspace could not be expanded.');
   });
   command('herdr.sourceControl', async input => {
     return select(input, { type: 'scm' });
@@ -269,25 +269,25 @@ async function activate(context) {
     const branches = await git.listBranches(project.path);
     const source = await vscode.window.showQuickPick([
       ...branches.map(branch => ({
-        label: branch.name, description: branch.remote ? 'Remote-Branch' : branch.current ? 'Lokaler Branch · aktuell' : 'Lokaler Branch',
+        label: branch.name, description: branch.remote ? 'Remote branch' : branch.current ? 'Local branch · current' : 'Local branch',
         ref: branch.ref
       })),
-      { label: '$(git-commit) HEAD', description: 'Aktueller Commit', ref: 'HEAD' },
-      { label: '$(edit) Branch oder Commit eingeben …', custom: true }
-    ], { title: 'Neuer Worktree', placeHolder: 'Ausgangsbranch auswählen', matchOnDescription: true, ignoreFocusOut: true });
+      { label: '$(git-commit) HEAD', description: 'Current commit', ref: 'HEAD' },
+      { label: '$(edit) Enter branch or commit …', custom: true }
+    ], { title: 'New worktree', placeHolder: 'Select a starting branch', matchOnDescription: true, ignoreFocusOut: true });
     if (!source) return;
     const base = source.custom ? await vscode.window.showInputBox({
-      title: 'Neuer Worktree', prompt: 'Ausgangsbranch oder Commit', placeHolder: 'Branch, Tag oder Commit-ID', ignoreFocusOut: true
+      title: 'New worktree', prompt: 'Starting branch or commit', placeHolder: 'Branch, tag or commit ID', ignoreFocusOut: true
     }) : source.ref;
     if (!base) return;
-    const branch = await vscode.window.showInputBox({ title: 'Neuer Worktree', prompt: 'Name für den neuen Branch', placeHolder: 'feature/meine-aufgabe', ignoreFocusOut: true });
+    const branch = await vscode.window.showInputBox({ title: 'New worktree', prompt: 'New branch name', placeHolder: 'feature/my-task', ignoreFocusOut: true });
     if (!branch) return;
     const destination = await vscode.window.showSaveDialog({
-      title: 'Ordner des neuen Worktrees', saveLabel: 'Worktree hier erstellen',
+      title: 'New worktree directory', saveLabel: 'Create worktree here',
       defaultUri: vscode.Uri.file(path.join(path.dirname(project.path), `${project.name}-worktrees`, branch.replace(/[^\w.-]+/g, '-')))
     });
     if (!destination) return;
-    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Worktree wird erstellt' },
+    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Creating worktree' },
       () => git.createWorktree(project.path, destination.fsPath, branch, base));
     await refresh();
     return destination.fsPath;
@@ -299,41 +299,41 @@ async function activate(context) {
     const candidates = projects.flatMap(project => (project.worktrees || []).filter(worktree => !worktree.isMain)
       .map(worktree => ({ project, worktree })));
     let resolved = candidates.find(candidate => candidate.worktree.path === (requested || currentPath));
-    if (!resolved && requested) throw new Error('Dieser Worktree kann nicht gelöscht werden. Der Hauptcheckout bleibt erhalten.');
+    if (!resolved && requested) throw new Error('This worktree cannot be deleted. The main checkout is protected.');
     if (!resolved) resolved = (await vscode.window.showQuickPick(candidates.map(candidate => ({
       label: `${candidate.project.name} / ${candidate.worktree.branch || 'detached'}`,
       description: candidate.worktree.path, candidate
-    })), { placeHolder: 'Worktree zum Löschen auswählen' }))?.candidate;
+    })), { placeHolder: 'Select a worktree to delete' }))?.candidate;
     if (!resolved) return;
     const { project, worktree } = resolved;
     const verify = async () => {
       await sessions.refresh();
       if (sessions.items.some(session => session.worktreePath === worktree.path
         && (sessions.live.has(session.id) || session.backend === 'herdr' && !session.endedAt))) {
-        throw new Error('Beende zuerst alle Sessions dieses Worktrees, auch die im Hintergrund.');
+        throw new Error('Stop all sessions in this worktree first, including background sessions.');
       }
       if (vscode.workspace.textDocuments.some(document => document.isDirty && document.uri.scheme === 'file'
         && (document.uri.fsPath === worktree.path || document.uri.fsPath.startsWith(worktree.path + path.sep)))) {
-        throw new Error('Speichere oder schließe zuerst die ungesicherten Dateien dieses Worktrees.');
+        throw new Error('Save or close this worktree’s unsaved files first.');
       }
-      if (worktree.locked) throw new Error('Dieser Worktree ist gesperrt. Entsperre ihn zuerst in Git.');
+      if (worktree.locked) throw new Error('This worktree is locked. Unlock it in Git first.');
       if (!worktree.prunable) {
         const status = await git.worktreeStatus(worktree);
         if (status.error) throw new Error(status.error);
-        if (status.changedFiles) throw new Error('Dieser Worktree enthält ungesicherte Änderungen. Committe oder sichere sie vor dem Löschen.');
+        if (status.changedFiles) throw new Error('This worktree contains uncommitted changes. Commit or preserve them before deleting it.');
       }
     };
     await verify();
-    const choice = await vscode.window.showWarningMessage(`Worktree „${worktree.branch || 'detached'}“ löschen?`, {
-      modal: true, detail: `${worktree.path}\n\nDer Worktree-Ordner wird gelöscht. Der Branch bleibt erhalten.`
-    }, 'Worktree löschen');
-    if (choice !== 'Worktree löschen') return;
+    const choice = await vscode.window.showWarningMessage(`Delete worktree “${worktree.branch || 'detached'}”?`, {
+      modal: true, detail: `${worktree.path}\n\nThe worktree directory will be deleted. The branch will be kept.`
+    }, 'Delete worktree');
+    if (choice !== 'Delete worktree') return;
     await verify();
     const fallback = project.worktrees.find(tree => tree.path !== worktree.path && !tree.error);
     // A project may originally have been added through the checkout being removed.
     const repositoryPath = project.path === worktree.path ? fallback?.path : project.path;
-    if (!repositoryPath) throw new Error('Kein anderer verfügbarer Checkout für dieses Projekt gefunden.');
-    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Worktree wird gelöscht' },
+    if (!repositoryPath) throw new Error('No other available checkout was found for this project.');
+    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Deleting worktree' },
       () => git.removeWorktree(repositoryPath, worktree.path));
     if (project.path === worktree.path) project.path = repositoryPath;
     const wasSelected = currentPath === worktree.path;
@@ -351,7 +351,7 @@ async function activate(context) {
     const folders = vscode.workspace.workspaceFolders || [];
     const index = folders.findIndex(folder => folder.uri.fsPath === worktree.path);
     if (index !== -1 && !vscode.workspace.updateWorkspaceFolders(index, 1)) {
-      throw new Error('Worktree gelöscht; sein Ordner konnte nicht aus dem Workspace entfernt werden.');
+      throw new Error('Worktree deleted; its folder could not be removed from the workspace.');
     }
   });
   command('herdr.startSession', async input => {
@@ -362,13 +362,13 @@ async function activate(context) {
     const inventory = await sessions.availableProfiles(profiles);
     for (const profile of inventory.unavailable) log.appendLine(`${profile.name}: ${profile.reason}`);
     let profile = input?.profileId ? inventory.available.find(p => p.id === input.profileId) : undefined;
-    if (input?.profileId && !profile) throw new Error('Dieses Agentenprofil ist nicht verfügbar: CLI fehlt oder wird von herdr nicht unterstützt.');
+    if (input?.profileId && !profile) throw new Error('This agent profile is unavailable: its CLI is missing or unsupported by herdr.');
     if (!profile) {
       const choice = await vscode.window.showQuickPick([
         ...inventory.available.map(p => ({ label: p.name, description: p.command, profile: p })),
-        { label: '$(settings-gear) Agentenprofile konfigurieren …', configure: true }
+        { label: '$(settings-gear) Configure agent profiles …', configure: true }
       ], { title: `${resolved.project.name} / ${resolved.worktree.branch || 'detached'}`,
-        placeHolder: inventory.available.length ? 'Installierte CLI für diese Session auswählen' : 'Keine unterstützte CLI gefunden · Pfad oder Profil konfigurieren' });
+        placeHolder: inventory.available.length ? 'Select an installed CLI for this session' : 'No supported CLI found · Configure an executable path or profile' });
       if (!choice) return;
       if (choice.configure) return vscode.commands.executeCommand('herdr.configureProfiles');
       profile = choice.profile;
@@ -391,10 +391,10 @@ async function activate(context) {
     const session = sessions.find(id);
     if (!session) return;
     if (!session.endedAt) {
-      const choice = await vscode.window.showWarningMessage(`Session „${session.name}“ löschen?`, {
-        modal: true, detail: 'Der laufende Agent wird beendet und die Session aus dem Verlauf entfernt.'
-      }, 'Session löschen');
-      if (choice !== 'Session löschen') return;
+      const choice = await vscode.window.showWarningMessage(`Delete session “${session.name}”?`, {
+        modal: true, detail: 'The running agent will be stopped and the session removed from history.'
+      }, 'Delete session');
+      if (choice !== 'Delete session') return;
     }
     await sessions.remove(id);
   });
@@ -402,19 +402,19 @@ async function activate(context) {
     const id = sessionId(input);
     if (!sessions.find(id)) return;
     const choice = await vscode.window.showQuickPick([
-      { label: 'Keine Markierung', value: 'none' },
-      { label: 'Braucht Eingabe', description: 'Manuelle Markierung', value: 'input' },
-      { label: 'Bereit zum Review', description: 'Manuelle Markierung', value: 'review' }
-    ], { placeHolder: 'Session für deine Übersicht markieren' });
+      { label: 'Clear flag', value: 'none' },
+      { label: 'Needs input', description: 'Manual flag', value: 'input' },
+      { label: 'Ready for review', description: 'Manual flag', value: 'review' }
+    ], { placeHolder: 'Set a manual session flag' });
     if (choice) sessions.update(id, { attention: choice.value });
   });
   command('herdr.configureProfiles', () => vscode.commands.executeCommand('workbench.action.openSettings', 'herdr.agentProfiles'));
   command('herdr.detectClis', async () => {
     const inventory = await sessions.availableProfiles(model.profiles(vscode.workspace.getConfiguration('herdr').get('agentProfiles', [])));
     if (!inventory.available.length) {
-      await vscode.window.showInformationMessage('Herdr: Keine unterstützte CLI gefunden. Eigene Installationspfade lassen sich in herdr.agentProfiles konfigurieren.');
+      await vscode.window.showInformationMessage('Herdr: No supported CLI found. Configure custom executable paths in herdr.agentProfiles.');
     } else await vscode.window.showQuickPick(inventory.available.map(profile => ({ label: profile.name, description: profile.executable })),
-      { title: `${inventory.backend} · Installierte Agenten`, placeHolder: 'Bei jedem Session-Start wird erneut geprüft' });
+      { title: `${inventory.backend} · Installed agents`, placeHolder: 'Checked again whenever a session starts' });
     return inventory;
   });
 
@@ -428,7 +428,7 @@ async function activate(context) {
     const nonce = randomBytes(18).toString('base64');
     const stylesheet = webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'media', 'dashboard.css'));
     const script = webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'media', 'dashboard.js'));
-    webview.html = `<!doctype html><html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';"><link rel="stylesheet" href="${stylesheet}"><title>Herdr · Sessions</title></head><body><main id="app"></main><script nonce="${nonce}" src="${script}"></script></body></html>`;
+    webview.html = `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';"><link rel="stylesheet" href="${stylesheet}"><title>Herdr · Sessions</title></head><body><main id="app"></main><script nonce="${nonce}" src="${script}"></script></body></html>`;
     const messages = webview.onDidReceiveMessage(async message => {
       if (!message || typeof message.type !== 'string') return;
       const data = snapshot();

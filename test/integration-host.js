@@ -21,7 +21,7 @@ async function run() {
   const checks = [];
   let backendSession;
   try {
-    const extension = vscode.extensions.getExtension('herdr-workbench.vscode-herdr');
+    const extension = vscode.extensions.getExtension(`${require('../package.json').publisher}.${require('../package.json').name}`);
     assert.ok(extension, 'Development extension is registered');
     const api = await extension.activate();
     await vscode.commands.executeCommand('herdr.addProject', vscode.Uri.file(process.env.HERDR_TEST_REPO));
@@ -190,7 +190,7 @@ async function run() {
 async function restore() {
   const checks = [];
   try {
-    const extension = vscode.extensions.getExtension('herdr-workbench.vscode-herdr');
+    const extension = vscode.extensions.getExtension(`${require('../package.json').publisher}.${require('../package.json').name}`);
     const api = await extension.activate();
     const id = process.env.HERDR_TEST_RESTORE;
     const current = () => api.getSnapshot().sessions.find(s => s.id === id);

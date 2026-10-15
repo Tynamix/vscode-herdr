@@ -38,28 +38,28 @@
     app.replaceChildren();
     const header = el('header', 'header');
     const title = el('div');
-    title.append(el('div', 'eyebrow', 'HERDR WORKBENCH'), el('h1', '', 'Session-Übersicht'));
+    title.append(el('div', 'eyebrow', 'HERDR WORKBENCH'), el('h1', '', 'Session overview'));
     const live = state.sessions.filter(s => s.terminalAttached);
     const attention = state.sessions.filter(s => ['blocked', 'done'].includes(s.indicator.state));
-    title.append(el('p', 'subtle', `${state.projects.length} Projekte · ${live.length} offene CLI-Sessions${attention.length ? ` · ${attention.length} brauchen Aufmerksamkeit` : ''}`));
+    title.append(el('p', 'subtle', `${state.projects.length} project${state.projects.length === 1 ? '' : 's'} · ${live.length} open CLI session${live.length === 1 ? '' : 's'}${attention.length ? ` · ${attention.length} need${attention.length === 1 ? 's' : ''} attention` : ''}`));
     const actions = el('div', 'actions');
-    actions.append(button('Installierte Agenten', 'profiles', {}, 'secondary'), button('Aktualisieren', 'refresh', {}, 'secondary'), button('+ Projekt', 'addProject'));
+    actions.append(button('Installed agents', 'profiles', {}, 'secondary'), button('Refresh', 'refresh', {}, 'secondary'), button('+ Project', 'addProject'));
     header.append(title, actions);
     app.append(header);
 
     if (!state.projects.length) {
       const empty = el('section', 'empty welcome');
-      empty.append(el('h2', '', 'Hier laufen deine Projekte zusammen.'),
-        el('p', 'subtle', 'Füge ein Git-Projekt hinzu. Bestehende Worktrees erscheinen automatisch.'),
-        button('Erstes Projekt hinzufügen', 'addProject'));
+      empty.append(el('h2', '', 'Your projects, together in one workbench.'),
+        el('p', 'subtle', 'Add a Git project. Existing worktrees appear automatically.'),
+        button('Add your first project', 'addProject'));
       app.append(empty);
       return;
     }
 
     const layout = el('div', 'layout');
     const projects = el('section', 'projects');
-    projects.setAttribute('aria-label', 'Projekte und Worktrees');
-    projects.append(el('h2', '', 'Projekte & Worktrees'));
+    projects.setAttribute('aria-label', 'Projects and worktrees');
+    projects.append(el('h2', '', 'Projects & Worktrees'));
     for (const project of state.projects) {
       const group = el('div', 'project');
       const projectHeader = el('div', 'project-heading');
@@ -70,18 +70,18 @@
         const card = el('div', `worktree${state.selectedWorktree === worktree.path ? ' selected' : ''}`);
         const branch = el('div', 'branch');
         branch.append(el('span', 'branch-glyph', '⑂'), el('span', 'branch-name', worktree.branch || `detached · ${worktree.head?.slice(0, 7) || ''}`));
-        if (!worktree.isMain) branch.append(trashButton('Worktree löschen', 'deleteWorktree', { worktreePath: worktree.path }));
+        if (!worktree.isMain) branch.append(trashButton('Delete worktree', 'deleteWorktree', { worktreePath: worktree.path }));
         card.append(branch);
         const location = el('div', 'path', worktree.path);
         location.title = worktree.path;
         card.append(location);
         const sessionCount = state.sessions.filter(s => s.worktreePath === worktree.path && s.terminalAttached).length;
-        card.append(el('div', 'worktree-meta', worktree.error ? 'Nicht verfügbar' : `${worktree.changedFiles || 0} geänderte Dateien · ${sessionCount} Terminals`));
+        card.append(el('div', 'worktree-meta', worktree.error ? 'Unavailable' : `${worktree.changedFiles || 0} changed file${worktree.changedFiles === 1 ? '' : 's'} · ${sessionCount} terminal${sessionCount === 1 ? '' : 's'}`));
         if (worktree.error) card.append(el('div', 'error', worktree.error));
         else {
           const controls = el('div', 'worktree-actions');
           controls.append(button('+ Session', 'start', { worktreePath: worktree.path }, 'small'),
-            button('Änderungen', 'select', { worktreePath: worktree.path }, 'small secondary'),
+            button('Changes', 'select', { worktreePath: worktree.path }, 'small secondary'),
             button('In Explorer', 'workspace', { worktreePath: worktree.path }, 'small quiet'));
           card.append(controls);
         }
@@ -92,10 +92,10 @@
 
     const sessions = el('section', 'sessions');
     const sessionHeader = el('div', 'section-heading');
-    sessionHeader.append(el('h2', '', 'Alle Sessions'));
+    sessionHeader.append(el('h2', '', 'All sessions'));
     const filters = el('div', 'filters');
-    filters.setAttribute('aria-label', 'Sessions filtern');
-    for (const [value, label] of [['all', 'Alle'], ['live', 'Offene'], ['attention', 'Aufmerksamkeit']]) {
+    filters.setAttribute('aria-label', 'Filter sessions');
+    for (const [value, label] of [['all', 'All'], ['live', 'Open'], ['attention', 'Attention']]) {
       const option = el('button', 'filter', label);
       option.type = 'button';
       option.setAttribute('aria-pressed', String(filter === value));
@@ -108,8 +108,8 @@
       || filter === 'attention' && ['blocked', 'done'].includes(s.indicator.state));
     if (!visible.length) {
       const empty = el('div', 'empty');
-      empty.append(el('h3', '', state.sessions.length ? 'Keine passenden Sessions' : 'Noch keine Sessions'),
-        el('p', 'subtle', state.sessions.length ? 'Wähle einen anderen Filter.' : 'Starte eine CLI über „+ Session“ im gewünschten Worktree.'));
+      empty.append(el('h3', '', state.sessions.length ? 'No matching sessions' : 'No sessions yet'),
+        el('p', 'subtle', state.sessions.length ? 'Choose a different filter.' : 'Start a CLI using “+ Session” in the desired worktree.'));
       sessions.append(empty);
     } else {
       for (const session of visible) {
@@ -123,29 +123,29 @@
         const meta = el('div', 'session-meta', `${session.projectName} / ${session.branch || 'detached'} · ${session.profileName}`);
         meta.title = session.worktreePath;
         row.append(meta);
-        if (session.connected && !session.terminalAttached) row.append(el('div', 'session-meta', 'Läuft im Hintergrund'));
+        if (session.connected && !session.terminalAttached) row.append(el('div', 'session-meta', 'Running in background'));
         if (session.attention !== 'none') row.append(el('span', `attention ${session.attention}`, session.label));
         const footer = el('div', 'session-footer');
         const created = new Date(session.createdAt);
-        const time = el('time', 'subtle', `Gestartet ${created.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`);
+        const time = el('time', 'subtle', `Started ${created.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`);
         time.dateTime = created.toISOString();
         footer.append(time);
         const controls = el('div', 'actions');
-        if (session.connected || session.backend === 'herdr' && session.status === 'detached') controls.append(button('Terminal öffnen', 'terminal', { sessionId: session.id }, 'small secondary'));
-        controls.append(button('Markieren', 'mark', { sessionId: session.id }, 'small quiet'));
+        if (session.connected || session.backend === 'herdr' && session.status === 'detached') controls.append(button('Open terminal', 'terminal', { sessionId: session.id }, 'small secondary'));
+        controls.append(button('Mark', 'mark', { sessionId: session.id }, 'small quiet'));
         if (session.connected && ['running', 'unknown'].includes(session.status)) {
-          const interrupt = button('Unterbrechen', 'interrupt', { sessionId: session.id }, 'small quiet');
-          interrupt.title = 'Ctrl+C an dieses Terminal senden';
+          const interrupt = button('Interrupt', 'interrupt', { sessionId: session.id }, 'small quiet');
+          interrupt.title = 'Send Ctrl+C to this terminal';
           controls.append(interrupt);
         }
-        if (session.connected) controls.append(button('Beenden', 'stop', { sessionId: session.id }, 'small quiet'));
-        controls.append(trashButton('Session löschen', 'deleteSession', { sessionId: session.id }));
+        if (session.connected) controls.append(button('Stop', 'stop', { sessionId: session.id }, 'small quiet'));
+        controls.append(trashButton('Delete session', 'deleteSession', { sessionId: session.id }));
         footer.append(controls);
         row.append(footer);
         sessions.append(row);
       }
     }
-    sessions.append(el('p', 'footnote', 'Kreisel: arbeitet · Blau: fertig, ungelesen · Leerer Punkt: inaktiv · Gelb: wartet auf Eingabe. „Offene“ zeigt Sessions mit geöffnetem Terminal. Nach dem Schließen läuft der Agent im Hintergrund weiter; über den Herdr-Baum oder „Alle“ lässt sich sein Terminal wieder öffnen. Der Papierkorb beendet und löscht die Session.'));
+    sessions.append(el('p', 'footnote', 'Spinner: working · Blue: finished, unread · Hollow dot: idle · Yellow: waiting for input. Open shows attached terminals. Closing a terminal leaves the agent running in the background; reopen it from the Herdr tree or All. The trash action stops and deletes the session.'));
     layout.append(projects, sessions);
     app.append(layout);
   }

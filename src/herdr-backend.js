@@ -30,12 +30,12 @@ function request(socketPath, method, params = {}, timeout = 8000) {
       socket.destroy();
       error ? reject(error) : resolve(value);
     };
-    const timer = setTimeout(() => finish(new Error(`herdr antwortet nicht auf ${method}.`)), timeout);
+    const timer = setTimeout(() => finish(new Error(`herdr is not responding to ${method}.`)), timeout);
     socket.on('error', error => finish(error));
     socket.on('connect', () => socket.write(JSON.stringify({ id, method, params }) + '\n'));
     socket.on('data', chunk => {
       buffer += chunk;
-      if (buffer.length > 16 * 1024 * 1024) return finish(new Error('herdr-Antwort ist zu groß.'));
+      if (buffer.length > 16 * 1024 * 1024) return finish(new Error('herdr response is too large.'));
       let end;
       while ((end = buffer.indexOf('\n')) !== -1) {
         const line = buffer.slice(0, end);
@@ -68,13 +68,13 @@ class HerdrBackend {
     if (this.inspection) return this.inspection;
     this.inspection = (async () => {
       this.executable = await findExecutable(this.executableSetting, executableDirectories(this.env));
-      if (!this.executable) throw new Error('herdr wurde nicht gefunden. Installiere herdr oder setze herdr.executablePath.');
+      if (!this.executable) throw new Error('herdr was not found. Install herdr or set herdr.executablePath.');
       const results = await Promise.allSettled([
         this.cli(['--version']), this.cli(['terminal', 'session', 'control', '--help']), this.cli(['agent', 'start', '--help'])
       ]);
-      for (const result of results) if (result.status === 'rejected') throw new Error('Der herdr-Build unterstützt die benötigte Terminal-Brücke nicht: ' + result.reason.message);
+      for (const result of results) if (result.status === 'rejected') throw new Error('This herdr build does not support the required terminal bridge: ' + result.reason.message);
       const kinds = /\[possible values:\s*([^\]]+)\]/s.exec(results[2].value)?.[1].split(',').map(value => value.trim());
-      if (!kinds?.length) throw new Error('Unterstützte Agententypen konnten bei herdr nicht ermittelt werden.');
+      if (!kinds?.length) throw new Error('Could not determine the agent types supported by herdr.');
       return { version: results[0].value.trim(), supportedKinds: kinds, executable: this.executable };
     })().catch(error => { this.inspection = undefined; throw error; });
     return this.inspection;
@@ -125,13 +125,13 @@ class HerdrBackend {
         try { await this.rpc('ping', {}, 500); return true; } catch { /* Startup in progress. */ }
         await new Promise(resolve => setTimeout(resolve, 100));
       }
-      throw new Error(`herdr-Server wurde nicht bereit. Log: ${path.join(this.directory, 'server.log')}`);
+      throw new Error(`herdr server did not become ready. Log: ${path.join(this.directory, 'server.log')}`);
     })().finally(() => { this.starting = undefined; });
     return this.starting;
   }
 
   rpc(method, params = {}, timeout) {
-    if (!this.socketPath) return Promise.reject(new Error('herdr ist nicht verbunden.'));
+    if (!this.socketPath) return Promise.reject(new Error('herdr is not connected.'));
     return request(this.socketPath, method, params, timeout);
   }
 

@@ -1,22 +1,22 @@
 'use strict';
 
 const LABELS = {
-  starting: 'Startet', running: 'Session offen', unknown: 'Session offen · Status unbekannt',
-  exited: 'CLI beendet', closed: 'Session beendet', detached: 'Nicht verbunden'
+  starting: 'Starting', running: 'Session open', unknown: 'Session open · Status unknown',
+  exited: 'CLI exited', closed: 'Session ended', detached: 'Disconnected'
 };
-const ATTENTION = { none: '', input: 'Braucht Eingabe', review: 'Bereit zum Review' };
+const ATTENTION = { none: '', input: 'Needs input', review: 'Ready for review' };
 
 function profiles(value) {
-  if (!Array.isArray(value)) throw new Error('herdr.agentProfiles muss eine Liste sein.');
+  if (!Array.isArray(value)) throw new Error('herdr.agentProfiles must be an array.');
   const seen = new Set();
   return value.map(profile => {
     if (!profile || typeof profile.id !== 'string' || !/^[\w-]+$/.test(profile.id) || typeof profile.name !== 'string' || !profile.name.trim()
       || typeof profile.command !== 'string' || !profile.command.trim() || /[\r\n\0]/.test(profile.command)) {
-      throw new Error('Agentenprofile brauchen eine eindeutige ID, einen Namen und einen einzeiligen CLI-Befehl.');
+      throw new Error('Agent profiles need a unique ID, a name and a single-line CLI command.');
     }
-    if (seen.has(profile.id)) throw new Error(`Doppelte Agentenprofil-ID: ${profile.id}`);
+    if (seen.has(profile.id)) throw new Error(`Duplicate agent profile ID: ${profile.id}`);
     if (profile.kind !== undefined && (typeof profile.kind !== 'string' || !/^[\w-]+$/.test(profile.kind))) {
-      throw new Error('kind muss ein von herdr unterstützter Agententyp sein.');
+      throw new Error('kind must be an agent type supported by herdr.');
     }
     seen.add(profile.id);
     return { id: profile.id, name: profile.name.trim(), command: profile.command.trim(),
@@ -35,15 +35,15 @@ function sessionLabel(session) {
 }
 
 function agentIndicator(session) {
-  if (session.attention === 'input') return { state: 'blocked', icon: 'circle-filled', color: 'charts.yellow', label: 'Braucht Eingabe · manuell' };
-  if (session.attention === 'review') return { state: 'done', icon: 'circle-filled', color: 'charts.blue', label: 'Bereit zum Review · manuell' };
-  if (session.agentState === 'blocked') return { state: 'blocked', icon: 'circle-filled', color: 'charts.yellow', label: 'Wartet auf Eingabe' };
-  if (session.agentState === 'working') return { state: 'working', icon: 'loading~spin', label: 'Arbeitet' };
-  if (session.unreadCompletion) return { state: 'done', icon: 'circle-filled', color: 'charts.blue', label: 'Fertig · ungelesen' };
+  if (session.attention === 'input') return { state: 'blocked', icon: 'circle-filled', color: 'charts.yellow', label: 'Needs input · manual' };
+  if (session.attention === 'review') return { state: 'done', icon: 'circle-filled', color: 'charts.blue', label: 'Ready for review · manual' };
+  if (session.agentState === 'blocked') return { state: 'blocked', icon: 'circle-filled', color: 'charts.yellow', label: 'Waiting for input' };
+  if (session.agentState === 'working') return { state: 'working', icon: 'loading~spin', label: 'Working' };
+  if (session.unreadCompletion) return { state: 'done', icon: 'circle-filled', color: 'charts.blue', label: 'Finished · unread' };
   if (session.agentState === 'idle') return { state: 'idle', icon: 'circle-outline', color: 'descriptionForeground',
-    label: session.agentOutcome === 'error' ? 'Fehler · inaktiv' : session.agentOutcome === 'aborted' ? 'Abgebrochen · inaktiv' : 'Inaktiv' };
+    label: session.agentOutcome === 'error' ? 'Error · idle' : session.agentOutcome === 'aborted' ? 'Interrupted · idle' : 'Idle' };
   if (['exited', 'closed', 'detached'].includes(session.status)) return { state: 'idle', icon: 'circle-outline', color: 'descriptionForeground', label: statusLabel(session) };
-  return { state: 'unknown', icon: 'circle-outline', color: 'descriptionForeground', label: session.status === 'starting' ? 'Startet' : 'Agentenstatus unbekannt' };
+  return { state: 'unknown', icon: 'circle-outline', color: 'descriptionForeground', label: session.status === 'starting' ? 'Starting' : 'Agent status unknown' };
 }
 
 function sortSessions(sessions) {

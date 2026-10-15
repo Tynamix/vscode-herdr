@@ -1,19 +1,61 @@
 {
   "name": "vscode-herdr",
-  "displayName": "Herdr Workbench",
-  "description": "Projects, Git worktrees and CLI agent sessions in the classic VS Code workbench.",
+  "displayName": "Herdr Workbench — Git Worktrees & CLI Agents",
+  "description": "Manage Git worktrees and persistent CLI agent sessions across projects, with native VS Code terminals, diffs and agent status.",
+  "icon": "media/herdr-marketplace-terminals-v2.png",
   "version": "0.1.0",
-  "publisher": "herdr-workbench",
+  "publisher": "tynamix",
+  "author": "Tynamix",
   "private": true,
-  "license": "UNLICENSED",
-  "engines": { "vscode": "^1.93.0" },
-  "categories": ["Other", "SCM Providers"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tynamix/vscode-herdr.git"
+  },
+  "homepage": "https://github.com/Tynamix/vscode-herdr#readme",
+  "bugs": {
+    "url": "https://github.com/Tynamix/vscode-herdr/issues"
+  },
+  "keywords": [
+    "herdr",
+    "git",
+    "worktree",
+    "agents",
+    "terminal",
+    "cli",
+    "pi",
+    "claude",
+    "codex",
+    "productivity"
+  ],
+  "galleryBanner": {
+    "color": "#0b1426",
+    "theme": "dark"
+  },
+  "preview": true,
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "categories": [
+    "Other",
+    "SCM Providers"
+  ],
   "main": "./src/extension.js",
-  "extensionKind": ["workspace"],
-  "activationEvents": ["onStartupFinished"],
+  "extensionKind": [
+    "workspace"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "capabilities": {
-    "untrustedWorkspaces": { "supported": false, "description": "Herdr launches the CLI commands you configure." },
-    "virtualWorkspaces": { "supported": false, "description": "Herdr needs filesystem access and Git on the extension host." }
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Herdr launches the CLI commands you configure."
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Herdr needs filesystem access and Git on the extension host."
+    }
   },
   "scripts": {
     "dev": "node scripts/dev.js",
@@ -23,73 +65,247 @@
     "test:pi": "node test/pi-integration.js",
     "test:integration": "node scripts/integration.js",
     "test:worktree": "node scripts/worktree-integration.js",
-    "package": "node scripts/package.js"
+    "package": "node scripts/package.js",
+    "package:marketplace": "vsce package --no-dependencies --out dist/herdr-workbench-marketplace.vsix",
+    "screenshots": "node scripts/screenshots.js"
   },
   "contributes": {
     "commands": [
-      { "command": "herdr.overview", "title": "Herdr: Session-Übersicht öffnen", "icon": "$(layout)" },
-      { "command": "herdr.addProject", "title": "Herdr: Projekt hinzufügen", "icon": "$(add)" },
-      { "command": "herdr.removeProject", "title": "Herdr: Projekt aus Übersicht entfernen" },
-      { "command": "herdr.refresh", "title": "Herdr: Aktualisieren", "icon": "$(refresh)" },
-      { "command": "herdr.createWorktree", "title": "Herdr: Worktree mit neuem Branch erstellen", "icon": "$(repo-forked)" },
-      { "command": "herdr.deleteWorktree", "title": "Herdr: Worktree löschen", "icon": "$(trash)" },
-      { "command": "herdr.selectWorktree", "title": "Herdr: Worktree auswählen" },
-      { "command": "herdr.addToWorkspace", "title": "Herdr: Worktree im Explorer öffnen", "icon": "$(folder-opened)" },
-      { "command": "herdr.sourceControl", "title": "Herdr: Klassische Git-Ansicht öffnen", "icon": "$(source-control)" },
-      { "command": "herdr.startSession", "title": "Herdr: CLI-Session starten", "icon": "$(play)" },
-      { "command": "herdr.focusSession", "title": "Herdr: Session-Terminal öffnen", "icon": "$(terminal)" },
-      { "command": "herdr.interruptSession", "title": "Herdr: Session unterbrechen (Ctrl+C)", "icon": "$(debug-pause)" },
-      { "command": "herdr.stopSession", "title": "Herdr: Session beenden", "icon": "$(debug-stop)" },
-      { "command": "herdr.deleteSession", "title": "Herdr: Session löschen", "icon": "$(trash)" },
-      { "command": "herdr.markSession", "title": "Herdr: Session markieren", "icon": "$(bookmark)" },
-      { "command": "herdr.forgetSession", "title": "Herdr: Session aus Verlauf entfernen" },
-      { "command": "herdr.openChange", "title": "Herdr: Änderung im normalen Diff-Editor öffnen" },
-      { "command": "herdr.configureProfiles", "title": "Herdr: Agentenprofile konfigurieren", "icon": "$(settings-gear)" },
-      { "command": "herdr.detectClis", "title": "Herdr: Installierte Agenten erkennen", "icon": "$(search)" }
+      {
+        "command": "herdr.overview",
+        "title": "Herdr: Open session overview",
+        "icon": "$(layout)"
+      },
+      {
+        "command": "herdr.addProject",
+        "title": "Herdr: Add project",
+        "icon": "$(add)"
+      },
+      {
+        "command": "herdr.removeProject",
+        "title": "Herdr: Remove project from overview"
+      },
+      {
+        "command": "herdr.refresh",
+        "title": "Herdr: Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "herdr.createWorktree",
+        "title": "Herdr: Create worktree with a new branch",
+        "icon": "$(repo-forked)"
+      },
+      {
+        "command": "herdr.deleteWorktree",
+        "title": "Herdr: Delete worktree",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "herdr.selectWorktree",
+        "title": "Herdr: Select worktree"
+      },
+      {
+        "command": "herdr.addToWorkspace",
+        "title": "Herdr: Open worktree in Explorer",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "herdr.sourceControl",
+        "title": "Herdr: Open native Source Control",
+        "icon": "$(source-control)"
+      },
+      {
+        "command": "herdr.startSession",
+        "title": "Herdr: Start CLI session",
+        "icon": "$(play)"
+      },
+      {
+        "command": "herdr.focusSession",
+        "title": "Herdr: Open session terminal",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "herdr.interruptSession",
+        "title": "Herdr: Interrupt session (Ctrl+C)",
+        "icon": "$(debug-pause)"
+      },
+      {
+        "command": "herdr.stopSession",
+        "title": "Herdr: Stop session",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "herdr.deleteSession",
+        "title": "Herdr: Delete session",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "herdr.markSession",
+        "title": "Herdr: Mark session",
+        "icon": "$(bookmark)"
+      },
+      {
+        "command": "herdr.forgetSession",
+        "title": "Herdr: Remove session from history"
+      },
+      {
+        "command": "herdr.openChange",
+        "title": "Herdr: Open change in native diff editor"
+      },
+      {
+        "command": "herdr.configureProfiles",
+        "title": "Herdr: Configure agent profiles",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "herdr.detectClis",
+        "title": "Herdr: Detect installed agents",
+        "icon": "$(search)"
+      }
     ],
-    "viewsContainers": { "activitybar": [{ "id": "herdr", "title": "Herdr", "icon": "media/herdr.svg" }] },
-    "views": { "herdr": [
-      { "id": "herdr.projects", "name": "Projekte & Worktrees" },
-      { "id": "herdr.sessions", "name": "Alle Sessions" },
-      { "id": "herdr.changes", "name": "Änderungen" }
-    ] },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "herdr",
+          "title": "Herdr",
+          "icon": "media/herdr.svg"
+        }
+      ]
+    },
+    "views": {
+      "herdr": [
+        {
+          "id": "herdr.projects",
+          "name": "Projects & Worktrees"
+        },
+        {
+          "id": "herdr.sessions",
+          "name": "All sessions"
+        },
+        {
+          "id": "herdr.changes",
+          "name": "Changes"
+        }
+      ]
+    },
     "viewsWelcome": [
-      { "view": "herdr.projects", "contents": "Mehrere Projekte. Mehrere Worktrees. Ein VS Code.\n[Projekt hinzufügen](command:herdr.addProject)\n[Session-Übersicht öffnen](command:herdr.overview)" },
-      { "view": "herdr.sessions", "contents": "Starte eine CLI-Session über das Play-Symbol eines Worktrees.\n[Agentenprofile konfigurieren](command:herdr.configureProfiles)" },
-      { "view": "herdr.changes", "contents": "Wähle einen Worktree aus. Seine Änderungen öffnen sich im normalen VS-Code-Diff-Editor." }
+      {
+        "view": "herdr.projects",
+        "contents": "Multiple projects. Multiple worktrees. One VS Code.\n[Add project](command:herdr.addProject)\n[Open session overview](command:herdr.overview)"
+      },
+      {
+        "view": "herdr.sessions",
+        "contents": "Start a CLI session using a worktree’s play icon.\n[Configure agent profiles](command:herdr.configureProfiles)"
+      },
+      {
+        "view": "herdr.changes",
+        "contents": "Select a worktree. Its changes open in the native VS Code diff editor."
+      }
     ],
     "menus": {
       "view/title": [
-        { "command": "herdr.addProject", "when": "view == herdr.projects", "group": "navigation@1" },
-        { "command": "herdr.refresh", "when": "view == herdr.projects", "group": "navigation@2" },
-        { "command": "herdr.overview", "when": "view == herdr.sessions", "group": "navigation@1" },
-        { "command": "herdr.detectClis", "when": "view == herdr.sessions", "group": "navigation@2" },
-        { "command": "herdr.sourceControl", "when": "view == herdr.changes", "group": "navigation" }
+        {
+          "command": "herdr.addProject",
+          "when": "view == herdr.projects",
+          "group": "navigation@1"
+        },
+        {
+          "command": "herdr.refresh",
+          "when": "view == herdr.projects",
+          "group": "navigation@2"
+        },
+        {
+          "command": "herdr.overview",
+          "when": "view == herdr.sessions",
+          "group": "navigation@1"
+        },
+        {
+          "command": "herdr.detectClis",
+          "when": "view == herdr.sessions",
+          "group": "navigation@2"
+        },
+        {
+          "command": "herdr.sourceControl",
+          "when": "view == herdr.changes",
+          "group": "navigation"
+        }
       ],
       "view/item/context": [
-        { "command": "herdr.createWorktree", "when": "view == herdr.projects && viewItem == herdrProject", "group": "inline@1" },
-        { "command": "herdr.removeProject", "when": "view == herdr.projects && viewItem == herdrProject", "group": "manage" },
-        { "command": "herdr.startSession", "when": "viewItem =~ /^herdrWorktree/", "group": "inline@1" },
-        { "command": "herdr.addToWorkspace", "when": "viewItem =~ /^herdrWorktree/", "group": "inline@2" },
-        { "command": "herdr.deleteWorktree", "when": "viewItem == herdrWorktree", "group": "inline@3" },
-        { "command": "herdr.sourceControl", "when": "viewItem =~ /^herdrWorktree/", "group": "git" },
-        { "command": "herdr.focusSession", "when": "viewItem == herdrSession", "group": "inline@1" },
-        { "command": "herdr.markSession", "when": "viewItem == herdrSession", "group": "inline@2" },
-        { "command": "herdr.deleteSession", "when": "viewItem == herdrSession", "group": "inline@3" },
-        { "command": "herdr.interruptSession", "when": "viewItem == herdrSession", "group": "session" },
-        { "command": "herdr.stopSession", "when": "viewItem == herdrSession", "group": "session" },
-        { "command": "herdr.forgetSession", "when": "viewItem == herdrSession", "group": "session" }
+        {
+          "command": "herdr.createWorktree",
+          "when": "view == herdr.projects && viewItem == herdrProject",
+          "group": "inline@1"
+        },
+        {
+          "command": "herdr.removeProject",
+          "when": "view == herdr.projects && viewItem == herdrProject",
+          "group": "manage"
+        },
+        {
+          "command": "herdr.startSession",
+          "when": "viewItem =~ /^herdrWorktree/",
+          "group": "inline@1"
+        },
+        {
+          "command": "herdr.addToWorkspace",
+          "when": "viewItem =~ /^herdrWorktree/",
+          "group": "inline@2"
+        },
+        {
+          "command": "herdr.deleteWorktree",
+          "when": "viewItem == herdrWorktree",
+          "group": "inline@3"
+        },
+        {
+          "command": "herdr.sourceControl",
+          "when": "viewItem =~ /^herdrWorktree/",
+          "group": "git"
+        },
+        {
+          "command": "herdr.focusSession",
+          "when": "viewItem == herdrSession",
+          "group": "inline@1"
+        },
+        {
+          "command": "herdr.markSession",
+          "when": "viewItem == herdrSession",
+          "group": "inline@2"
+        },
+        {
+          "command": "herdr.deleteSession",
+          "when": "viewItem == herdrSession",
+          "group": "inline@3"
+        },
+        {
+          "command": "herdr.interruptSession",
+          "when": "viewItem == herdrSession",
+          "group": "session"
+        },
+        {
+          "command": "herdr.stopSession",
+          "when": "viewItem == herdrSession",
+          "group": "session"
+        },
+        {
+          "command": "herdr.forgetSession",
+          "when": "viewItem == herdrSession",
+          "group": "session"
+        }
       ]
     },
     "configuration": {
       "title": "Herdr Workbench",
       "properties": {
         "herdr.switchWorkspaceOnSelect": {
-          "type": "boolean", "default": true, "scope": "window",
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
           "description": "Switch Explorer, search, tasks and new terminals to the selected worktree by making it the only workspace folder. Other projects and sessions remain in Herdr. VS Code may restart extensions when the first workspace folder changes. Disable to keep a manually managed multi-root workspace."
         },
         "herdr.executablePath": {
-          "type": "string", "default": "herdr", "scope": "machine",
+          "type": "string",
+          "default": "herdr",
+          "scope": "machine",
           "description": "Executable or absolute path of herdr (0.9.0+ with terminal session control). Reload the window after changing it."
         },
         "herdr.agentProfiles": {
@@ -98,18 +314,53 @@
           "description": "Optional custom profiles in addition to automatically detected CLIs. Only installed agents supported by herdr are offered. Commands must start with the CLI executable or its absolute path; arguments are allowed. Matching IDs override detected defaults.",
           "default": [],
           "items": {
-            "type": "object", "required": ["id", "name", "command"], "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "command"
+            ],
+            "additionalProperties": false,
             "properties": {
-              "id": { "type": "string", "pattern": "^[a-zA-Z0-9_-]+$" },
-              "name": { "type": "string", "minLength": 1 },
-              "command": { "type": "string", "minLength": 1 },
-              "kind": { "type": "string", "description": "herdr agent type, e.g. pi, claude, codex or cursor. Inferred from the CLI executable when omitted; specify for wrappers or custom executable names." }
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "command": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string",
+                "description": "herdr agent type, e.g. pi, claude, codex or cursor. Inferred from the CLI executable when omitted; specify for wrappers or custom executable names."
+              }
             }
           }
         },
-        "herdr.refreshInterval": { "type": "number", "default": 8, "minimum": 3, "maximum": 300, "description": "Refresh worktrees and change counts every N seconds." },
-        "herdr.terminalLocation": { "type": "string", "enum": ["panel", "editor"], "default": "panel", "description": "Open CLI sessions in the terminal panel or as editor tabs." }
+        "herdr.refreshInterval": {
+          "type": "number",
+          "default": 8,
+          "minimum": 3,
+          "maximum": 300,
+          "description": "Refresh worktrees and change counts every N seconds."
+        },
+        "herdr.terminalLocation": {
+          "type": "string",
+          "enum": [
+            "panel",
+            "editor"
+          ],
+          "default": "panel",
+          "description": "Open CLI sessions in the terminal panel or as editor tabs."
+        }
       }
     }
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^4.0.0"
   }
 }

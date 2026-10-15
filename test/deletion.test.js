@@ -99,7 +99,7 @@ test('cancelled worktree deletion preserves the folder, branch and catalog', asy
 test('deleting the selected worktree restores the remaining checkout and a project added through the linked folder', async t => {
   const { root, linked, ui, execute, api, data, workspace } = await fixture(t, { addedThroughLinked: true });
   await execute('herdr.selectWorktree');
-  ui.response = 'Worktree löschen';
+  ui.response = 'Delete worktree';
   await execute('herdr.deleteWorktree');
   await assert.rejects(fs.access(linked));
   assert.equal(api.getSnapshot().selectedWorktree, root);
@@ -113,16 +113,16 @@ test('deleting the selected worktree restores the remaining checkout and a proje
 test('worktree deletion refuses background agents, dirty editors and changes that appear during confirmation', async t => {
   const { root, linked, ui, execute, sessions, workspace } = await fixture(t);
   sessions.items.push({ id: 'background', backend: 'herdr', worktreePath: linked, backendAlive: true });
-  await assert.rejects(execute('herdr.deleteWorktree'), /Sessions dieses Worktrees/);
+  await assert.rejects(execute('herdr.deleteWorktree'), /sessions in this worktree/);
   sessions.items = [];
   workspace.textDocuments.push({ isDirty: true, uri: { scheme: 'file', fsPath: path.join(linked, 'file.txt') } });
-  await assert.rejects(execute('herdr.deleteWorktree'), /ungesicherten Dateien/);
+  await assert.rejects(execute('herdr.deleteWorktree'), /unsaved files/);
   workspace.textDocuments = [];
-  ui.response = 'Worktree löschen';
+  ui.response = 'Delete worktree';
   ui.duringConfirm = () => fs.writeFile(path.join(linked, 'file.txt'), 'changed during confirmation\n');
-  await assert.rejects(execute('herdr.deleteWorktree'), /ungesicherte Änderungen/);
+  await assert.rejects(execute('herdr.deleteWorktree'), /uncommitted changes/);
   assert.equal(await fs.readFile(path.join(linked, 'file.txt'), 'utf8'), 'changed during confirmation\n');
-  await assert.rejects(execute('herdr.deleteWorktree', { worktreePath: root }), /Hauptcheckout/);
+  await assert.rejects(execute('herdr.deleteWorktree', { worktreePath: root }), /main checkout/);
 });
 
 test('session trash confirmation can be cancelled and ended history can be removed directly', async t => {
@@ -130,7 +130,7 @@ test('session trash confirmation can be cancelled and ended history can be remov
   sessions.items.push({ id: 'active', name: 'Active' }, { id: 'ended', endedAt: 1 });
   await execute('herdr.deleteSession', 'active');
   assert.equal(ui.removals.length, 0);
-  ui.response = 'Session löschen';
+  ui.response = 'Delete session';
   await execute('herdr.deleteSession', 'active');
   assert.deepEqual(ui.removals, ['active']);
   await execute('herdr.deleteSession', 'ended');

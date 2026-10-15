@@ -49,7 +49,7 @@ function commandExecutable(command) {
 }
 
 function quoteShell(value) {
-  if (/[\r\n\0]/.test(value)) throw new Error('Ungültiger Befehlspfad.');
+  if (/[\r\n\0]/.test(value)) throw new Error('Invalid executable path.');
   if (process.platform === 'win32') return `'${value.replace(/'/g, "''")}'`;
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
@@ -72,7 +72,7 @@ async function discoverProfiles({ supportedKinds, profiles = [], directories = e
       : AGENTS.find(candidate => candidate.executable === basename);
     const executable = parsed && await findExecutable(parsed.executable, directories);
     if (!agent || !supported.has(agent.kind) || !executable) {
-      unavailable.push({ id: profile.id, name: profile.name, reason: !executable ? 'CLI nicht gefunden' : 'Vom herdr-Build nicht unterstützt' });
+      unavailable.push({ id: profile.id, name: profile.name, reason: !executable ? 'CLI not found' : 'Unsupported by this herdr build' });
       continue;
     }
     available.push({ ...profile, kind: agent.kind, executable, origin: 'configured',

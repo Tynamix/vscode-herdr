@@ -1,0 +1,17 @@
+.git/**
+.github/**
+.vscode/**
+.vscode-dev/**
+design/**
+dist/**
+scripts/**
+test/**
+node_modules/**
+**/.DS_Store
+package-lock.json
+.vscodeignore
+.gitignore
+docs/PUBLISHING.md
+docs/SCREENSHOTS.md
+media/herdr-marketplace.png
+media/herdr-marketplace-terminals.png

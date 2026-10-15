@@ -39,7 +39,7 @@ function state(terminalAttached) {
     ] }],
     sessions: [{ id: 'session-1', name: 'Pi · feature', projectName: 'Example', profileName: 'Pi',
       worktreePath: '/example-feature', branch: 'feature', backend: 'herdr', status: 'running', connected: true,
-      terminalAttached, createdAt: 1000, attention: 'none', indicator: { state: 'idle', label: 'Inaktiv' } }]
+      terminalAttached, createdAt: 1000, attention: 'none', indicator: { state: 'idle', label: 'Idle' } }]
   };
 }
 
@@ -50,14 +50,14 @@ test('open sessions disappear on terminal close and return when the same session
   assert.equal(rows().length, 1);
   ui.send(state(false));
   assert.equal(rows().length, 0);
-  assert.ok(ui.elements().some(element => element.textContent?.includes('0 offene CLI-Sessions')));
-  ui.elements().find(element => element.textContent === 'Alle').click();
+  assert.ok(ui.elements().some(element => element.textContent?.includes('0 open CLI sessions')));
+  ui.elements().find(element => element.textContent === 'All').click();
   assert.equal(rows().length, 1);
-  assert.ok(ui.elements().some(element => element.textContent === 'Läuft im Hintergrund'));
-  ui.elements().find(element => element.textContent === 'Terminal öffnen').click();
+  assert.ok(ui.elements().some(element => element.textContent === 'Running in background'));
+  ui.elements().find(element => element.textContent === 'Open terminal').click();
   assert.equal(ui.messages.at(-1).type, 'terminal');
   assert.equal(ui.messages.at(-1).sessionId, 'session-1');
-  ui.elements().find(element => element.textContent === 'Offene').click();
+  ui.elements().find(element => element.textContent === 'Open').click();
   ui.send(state(true));
   assert.equal(rows().length, 1);
 });
@@ -65,12 +65,12 @@ test('open sessions disappear on terminal close and return when the same session
 test('accessible trash icons target the selected session or linked worktree and protect the main checkout', () => {
   const ui = dashboard();
   ui.send(state(true));
-  const worktreeButtons = ui.elements().filter(element => element.attributes['aria-label'] === 'Worktree löschen');
+  const worktreeButtons = ui.elements().filter(element => element.attributes['aria-label'] === 'Delete worktree');
   assert.equal(worktreeButtons.length, 1);
   worktreeButtons[0].click();
   assert.equal(ui.messages.at(-1).type, 'deleteWorktree');
   assert.equal(ui.messages.at(-1).worktreePath, '/example-feature');
-  ui.elements().find(element => element.attributes['aria-label'] === 'Session löschen').click();
+  ui.elements().find(element => element.attributes['aria-label'] === 'Delete session').click();
   assert.equal(ui.messages.at(-1).type, 'deleteSession');
   assert.equal(ui.messages.at(-1).sessionId, 'session-1');
 });

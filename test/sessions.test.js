@@ -104,7 +104,7 @@ test('closing and reopening the terminal detaches the renderer and never restart
   manager.live.get(id).terminal.dispose();
   assert.equal(manager.live.has(id), false);
   assert.equal(manager.find(id).backendAlive, true);
-  await assert.rejects(manager.forget(id), /Beende zuerst/);
+  await assert.rejects(manager.forget(id), /Stop the session first/);
   await manager.focus(id);
   assert.equal(manager.live.has(id), true);
   assert.equal(calls.filter(c => c[0] === 'run').length, 1);
@@ -213,7 +213,7 @@ test('delete retains the entry and its terminal when stopping the agent fails or
   assert.equal(manager.find(id).backendAlive, true);
   assert.equal(manager.live.has(id), true);
   backend.offline = true;
-  await assert.rejects(manager.remove(id), /nicht erreichbar/);
+  await assert.rejects(manager.remove(id), /unreachable/);
   assert.ok(manager.find(id));
   assert.equal(manager.live.has(id), true);
 });
@@ -260,7 +260,7 @@ test('offline backend does not invent completion or permit removing a potentiall
   await manager.refresh();
   assert.equal(manager.find(id).status, 'detached');
   assert.equal(manager.find(id).unreadCompletion, false);
-  await assert.rejects(manager.forget(id), /nicht erreichbar/);
+  await assert.rejects(manager.forget(id), /unreachable/);
   assert.equal(calls.filter(c => c[0] === 'stop').length, 0);
 });
 
@@ -268,14 +268,14 @@ test('ownership mismatch prevents closing a different daemon workspace', async t
   const { manager, state, calls } = fixture(t);
   const { id } = await manager.start(tree, project, profile);
   state.workspaces[0].label = 'Foreign workspace';
-  await assert.rejects(manager.stop(id), /nicht mit herdr verbunden/);
+  await assert.rejects(manager.stop(id), /not connected to herdr/);
   assert.equal(calls.filter(c => c[0] === 'stop').length, 0);
 });
 
 test('an unconfirmed launch is retained for inspection and never submitted again', async t => {
   const { manager, backend, calls } = fixture(t);
   backend.run = async () => { calls.push(['run']); throw new Error('timeout'); };
-  await assert.rejects(manager.start(tree, project, profile), /vorhandene Session/);
+  await assert.rejects(manager.start(tree, project, profile), /existing session/);
   assert.equal(manager.items.length, 1);
   await manager.focus(manager.items[0].id);
   assert.equal(calls.filter(c => c[0] === 'run').length, 1);
@@ -294,7 +294,7 @@ test('legacy direct terminals remain attached without relaunching them', t => {
 
 test('profiles reject invalid IDs, duplicate IDs and multiline commands', () => {
   assert.throws(() => profiles([{ name: 'Missing id', command: 'pi' }]));
-  assert.throws(() => profiles([profile, profile]), /Doppelte/);
+  assert.throws(() => profiles([profile, profile]), /Duplicate/);
   assert.throws(() => profiles([{ ...profile, command: 'pi\nother' }]));
   assert.deepEqual(profiles([profile]), [profile]);
   assert.deepEqual(sortSessions([{ id: 1, agentState: 'idle', createdAt: 100 },
@@ -304,6 +304,6 @@ test('profiles reject invalid IDs, duplicate IDs and multiline commands', () => 
 test('untrusted workspaces cannot start a server or CLI', async t => {
   const { manager, vscode, calls } = fixture(t);
   vscode.workspace.isTrusted = false;
-  await assert.rejects(manager.start(tree, project, profile), /vertrauenswürdigen/);
+  await assert.rejects(manager.start(tree, project, profile), /trusted/);
   assert.deepEqual(calls, []);
 });

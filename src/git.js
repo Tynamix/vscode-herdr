@@ -79,7 +79,7 @@ async function inspectProject(cwd) {
 }
 
 async function worktreeStatus(tree) {
-  if (tree.prunable) return { ...tree, error: 'Worktree ist nicht mehr auf dem Dateisystem vorhanden.' };
+  if (tree.prunable) return { ...tree, error: 'Worktree no longer exists on the filesystem.' };
   try {
     const status = await git(tree.path, ['status', '--porcelain=v1', '-z', '--untracked-files=all']);
     return { ...tree, changedFiles: countChanges(status) };
@@ -89,7 +89,7 @@ async function worktreeStatus(tree) {
 }
 
 async function createWorktree(cwd, destination, branch, base = 'HEAD') {
-  if (!branch || branch.startsWith('-')) throw new Error('Bitte einen gültigen neuen Branchnamen eingeben.');
+  if (!branch || branch.startsWith('-')) throw new Error('Enter a valid new branch name.');
   await git(cwd, ['check-ref-format', '--branch', branch]);
   const commit = (await git(cwd, ['rev-parse', '--verify', '--end-of-options', `${base}^{commit}`])).trim();
   await git(cwd, ['worktree', 'add', '-b', branch, '--', path.resolve(destination), commit], { timeout: 60000 });
@@ -98,9 +98,9 @@ async function createWorktree(cwd, destination, branch, base = 'HEAD') {
 
 async function removeWorktree(cwd, target) {
   const worktree = (await listWorktrees(cwd)).find(tree => path.resolve(tree.path) === path.resolve(target));
-  if (!worktree) throw new Error('Dieser Worktree ist nicht mehr verfügbar. Bitte aktualisieren.');
-  if (worktree.isMain) throw new Error('Der Hauptcheckout kann nicht als Worktree gelöscht werden.');
-  if (worktree.locked) throw new Error('Dieser Worktree ist gesperrt. Entsperre ihn zuerst in Git.');
+  if (!worktree) throw new Error('This worktree is no longer available. Refresh the view.');
+  if (worktree.isMain) throw new Error('The main checkout cannot be deleted as a worktree.');
+  if (worktree.locked) throw new Error('This worktree is locked. Unlock it in Git first.');
   // Git refuses dirty worktrees, untracked files and submodules without force.
   await git(cwd, ['worktree', 'remove', '--', worktree.path], { timeout: 60000 });
 }

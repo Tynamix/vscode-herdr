@@ -23,7 +23,7 @@ async function run() {
   const save = () => fs.writeFile(file, JSON.stringify(state));
   let api;
   try {
-    api = await vscode.extensions.getExtension('herdr-workbench.vscode-herdr').activate();
+    api = await vscode.extensions.getExtension(`${require('../package.json').publisher}.${require('../package.json').name}`).activate();
     async function root(expected) {
       await until(() => vscode.workspace.workspaceFolders?.length === 1 && vscode.workspace.workspaceFolders[0].uri.fsPath === expected
         && api.getSnapshot().selectedWorktree === expected && api.getSnapshot().changes.worktreePath === expected, 'single active workspace folder ' + expected);

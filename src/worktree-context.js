@@ -84,7 +84,7 @@ class WorktreeContext {
           uri, name: `${project.name} · ${worktree.branch || 'detached'}`
         })) {
           this.switching = false;
-          throw new Error('Das Ordnerfenster konnte nicht in einen Workspace umgewandelt werden.');
+          throw new Error('The folder window could not be converted into a workspace.');
         }
         return true;
       }
@@ -121,7 +121,7 @@ class WorktreeContext {
     });
     if (!accepted) {
       this.switching = false;
-      throw new Error('Der Workspace konnte nicht auf diesen Worktree umgestellt werden.');
+      throw new Error('The workspace could not be switched to this worktree.');
     }
     // The first root changed: VS Code can restart this extension host. All
     // state and any pending UI action must already have been persisted.

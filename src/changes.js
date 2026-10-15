@@ -39,9 +39,9 @@ class Changes {
   async applySelection(worktree, generation) {
     if (this.disposed || generation !== this.generation) return;
     const extension = this.vscode.extensions.getExtension('vscode.git');
-    if (!extension) throw new Error('Die integrierte Git-Erweiterung von VS Code ist nicht verfügbar.');
+    if (!extension) throw new Error('The built-in VS Code Git extension is unavailable.');
     const gitExtension = await extension.activate();
-    if (!gitExtension.enabled) throw new Error('Bitte die integrierte Git-Erweiterung aktivieren.');
+    if (!gitExtension.enabled) throw new Error('Enable the built-in Git extension.');
     const api = gitExtension.getAPI(1);
     if (this.disposed || generation !== this.generation) return;
     if (this.api !== api) {
@@ -56,7 +56,7 @@ class Changes {
       });
     }
     const repository = await this.openSelectedRepository(this.vscode.Uri.file(worktree.path));
-    if (!repository) throw new Error('Git konnte diesen Worktree nicht öffnen.');
+    if (!repository) throw new Error('Git could not open this worktree.');
     await repository.status();
     if (this.disposed || generation !== this.generation) return;
     this.setRepository(repository);
@@ -120,10 +120,10 @@ class Changes {
     if (item) return [];
     const state = this.repository.state;
     return [
-      { label: 'Merge-Konflikte', changes: state.mergeChanges || [], conflict: true },
-      { label: 'Vorgemerkte Änderungen', changes: state.indexChanges || [], staged: true },
-      { label: 'Änderungen', changes: state.workingTreeChanges || [], staged: false },
-      { label: 'Neue Dateien', changes: state.untrackedChanges || [], staged: false }
+      { label: 'Merge conflicts', changes: state.mergeChanges || [], conflict: true },
+      { label: 'Staged changes', changes: state.indexChanges || [], staged: true },
+      { label: 'Changes', changes: state.workingTreeChanges || [], staged: false },
+      { label: 'Untracked files', changes: state.untrackedChanges || [], staged: false }
     ].filter(group => group.changes.length).map(group => ({ ...group, type: 'group', repositoryPath }));
   }
 
@@ -142,7 +142,7 @@ class Changes {
     const relative = path.relative(item.repositoryPath, path.dirname(uri.fsPath));
     tree.description = relative || undefined;
     tree.tooltip = uri.fsPath;
-    tree.command = { command: 'herdr.openChange', title: 'Diff öffnen', arguments: [item] };
+    tree.command = { command: 'herdr.openChange', title: 'Open diff', arguments: [item] };
     return tree;
   }
 
@@ -159,7 +159,7 @@ class Changes {
     const left = added ? empty : this.api.toGitUri(change.originalUri, item.staged ? 'HEAD' : '');
     const right = deleted ? empty : item.staged ? this.api.toGitUri(target, '') : target;
     return v.commands.executeCommand('vscode.diff', left, right,
-      `${path.basename(target.fsPath)} · ${item.staged ? 'Index' : 'Arbeitsverzeichnis'}`, { preview: false });
+      `${path.basename(target.fsPath)} · ${item.staged ? 'Index' : 'Working tree'}`, { preview: false });
   }
 }
 

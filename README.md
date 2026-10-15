@@ -1,10 +1,18 @@
-# Herdr Workbench for VS Code
+<img src="media/herdr-marketplace-terminals-v2.png" width="96" alt="Herdr Workbench logo: four terminal prompts forming an H">
+
+# Herdr Workbench
+
+**Git worktrees and persistent CLI agents, together in VS Code.**
 
 Herdr Workbench brings multiple Git projects, their worktrees, and CLI coding-agent sessions into one Visual Studio Code window. Select a worktree to make it your active editing context, start an installed agent in that checkout, and follow its progress alongside sessions running in other projects.
 
 VS Code provides the Explorer, search, tasks, Source Control, diff editors, and integrated terminals. **The herdr backend owns the agent processes and reports their status**, so agents can keep working after you close their terminal view or the VS Code window. Clicking a session reconnects its terminal to the existing process.
 
 This is an independent extension for herdr. It uses herdr's CLI and socket API; its terminal user interface is not opened or embedded.
+
+![Herdr Workbench session overview showing two projects, Git worktrees and three agent states](docs/screenshots/session-overview.png)
+
+*Track working agents, input requests and unread completions across projects. Screenshots show real VS Code windows with local demo repositories and an offline fixture agent.*
 
 ## What you can do
 
@@ -19,6 +27,16 @@ This is an independent extension for herdr. It uses herdr's CLI and socket API; 
 
 For example, you can leave an agent working on a feature in one project, switch to another project's checkout, and work there. The first session stays in the Herdr tree. Selecting it later activates its worktree and opens a terminal connected to the same agent.
 
+## Native Git and terminals
+
+![A selected worktree's TypeScript changes open in the native VS Code side-by-side diff editor](docs/screenshots/native-git-diff.png)
+
+*Review the selected checkout with native Git views and diffs. Worktree and session navigation stays in the sidebar.*
+
+![A persistent Herdr session displayed in the VS Code terminal below its worktree's source file](docs/screenshots/persistent-terminal.png)
+
+*Open a session's terminal alongside its source files. Close the terminal to leave the agent in the background, then click the session in the Herdr tree to reconnect.*
+
 ## Requirements
 
 - **Visual Studio Code 1.93 or later**, with the built-in Git extension enabled.
@@ -29,7 +47,7 @@ For example, you can leave an agent working on a feature in one project, switch 
 
 Install Git, herdr, and the agent CLIs on the machine running the VS Code workspace extension host. If herdr is outside the executable search path, set `herdr.executablePath` and reload the window.
 
-The installed extension runs directly in VS Code without a separate build or runtime npm dependencies. Building a VSIX from this repository requires Node.js and Python 3.
+The installed extension runs directly in VS Code without a separate build or runtime npm dependencies. The offline packager requires Node.js and Python 3; Marketplace packaging uses the official `@vscode/vsce` development dependency.
 
 ## Installation
 
@@ -43,16 +61,16 @@ The current package is written to `dist/herdr-workbench-0.1.0.vsix`. In VS Code,
 
 To try the source in a separate development window instead, see [Development](#development).
 
+Maintainers: see [Publishing to the Marketplace](docs/PUBLISHING.md) for publisher setup and the validated release package, and [Screenshot workflow](docs/SCREENSHOTS.md) to reproduce the documentation scenes.
+
 ## First session
 
-The extension currently uses German UI labels. The instructions below include those labels so you can find the corresponding controls.
-
 1. Open the **Herdr** icon in the Activity Bar.
-2. Choose **Projekt hinzufügen** (Add project) and select a Git checkout. You can add either the main checkout or a linked worktree; checkouts belonging to the same repository are grouped as one project.
+2. Choose **Add project** and select a Git checkout. You can add either the main checkout or a linked worktree; checkouts belonging to the same repository are grouped as one project.
 3. Expand the project to see its worktrees, branch names, and changed-file counts.
 4. Select the worktree you want to use. By default, it becomes the window's active workspace folder.
 5. Click the worktree's **play** icon and select an available agent profile. The agent starts in that worktree's directory and its terminal opens in VS Code.
-6. Open **Herdr: Session-Übersicht öffnen** (Open session overview), or click the Herdr session count in the status bar, to see the dashboard.
+6. Open **Herdr: Open session overview**, or click the Herdr session count in the status bar, to see the dashboard.
 
 You can repeat these steps to add more projects and start more sessions. Multiple sessions in the same worktree share the same files. Use separate worktrees when the sessions need separate working directories.
 
@@ -69,9 +87,9 @@ The sidebar has three views:
 
 | View | Purpose |
 | --- | --- |
-| **Projekte & Worktrees** | Projects, their discovered worktrees, and sessions grouped beneath each worktree. |
-| **Alle Sessions** | Sessions across all registered projects, including background sessions and ended history. |
-| **Änderungen** | Changes in the selected worktree. Clicking a file opens a native diff, or the file itself for a conflict. |
+| **Projects & Worktrees** | Projects, their discovered worktrees, and sessions grouped beneath each worktree. |
+| **All sessions** | Sessions across all registered projects, including background sessions and ended history. |
+| **Changes** | Changes in the selected worktree. Clicking a file opens a native diff, or the file itself for a conflict. |
 
 Projects and sessions are stored per VS Code workspace. Adding a project to this catalog does not immediately add all of its worktrees to the Explorer.
 
@@ -107,9 +125,9 @@ Herdr will still select the worktree's Git context, but leave the workspace fold
 
 ### Create a worktree
 
-Click the **branch** icon on a project, or run **Herdr: Worktree mit neuem Branch erstellen**.
+Click the **branch** icon on a project, or run **Herdr: Create worktree with a new branch**.
 
-1. Select a starting point from the local branches, already known remote branches, or `HEAD`. Choose **Branch oder Commit eingeben …** to enter a branch, tag, or commit manually.
+1. Select a starting point from the local branches, already known remote branches, or `HEAD`. Choose **Enter branch or commit …** to enter a branch, tag, or commit manually.
 2. Enter a name for the new branch.
 3. Choose the new worktree's destination directory.
 
@@ -121,34 +139,38 @@ Click the **trash** icon on a linked worktree in the sidebar or dashboard. After
 
 The main checkout has no worktree trash action. Deletion is also blocked while the target has running sessions, including background sessions, unsaved editor documents, Git changes, or a worktree lock. Stop the sessions and save, commit, or otherwise preserve the changes first. Git's normal removal checks apply; the extension does not force removal.
 
-To remove a project from Herdr's catalog, use **Herdr: Projekt aus Übersicht entfernen** in the project's context menu. This removes the catalog entry rather than deleting its files. Connected sessions must be stopped first.
+To remove a project from Herdr's catalog, use **Herdr: Remove project from overview** in the project's context menu. This removes the catalog entry rather than deleting its files. Connected sessions must be stopped first.
 
 ## Managing sessions
 
 ### Terminal views and background sessions
 
-Closing a session's terminal immediately removes it from the dashboard's **Offene** (Open) filter and from the open-session count. Its agent continues running in herdr. The session remains in the sidebar and under **Alle** (All), with a **Hintergrund** (Background) label while the backend is connected.
+Closing a session's terminal immediately removes it from the dashboard's **Open** filter and from the open-session count. Its agent continues running in herdr. The session remains in the sidebar and under **All**, with a **Background** label while the backend is connected.
 
-Click the session in either sidebar tree, or use **Terminal öffnen** (Open terminal), to open a terminal view connected to the same process. Reopening a session does not run its launch command again. With automatic workspace switching enabled, its worktree also becomes active.
+Click the session in either sidebar tree, or use **Open terminal**, to open a terminal view connected to the same process. Reopening a session does not run its launch command again. With automatic workspace switching enabled, its worktree also becomes active.
+
+![The checkout agent keeps working in the background after its terminal is closed, while the dashboard counts only two open terminals](docs/screenshots/background-session.png)
+
+*The session remains available under All and in the Herdr tree. The open-terminal count drops as soon as its terminal closes.*
 
 ### Session actions
 
 | Action | Effect |
 | --- | --- |
-| **Terminal öffnen** / click the session | Show the existing terminal or attach a new terminal view to the existing session. |
-| **Unterbrechen** | Send Ctrl+C to that session, for example to interrupt the agent's current turn. The CLI determines how it handles the signal. |
-| **Beenden** | Close the corresponding herdr session and its process. Keep the ended entry in history. |
-| **Trash / Session löschen** | Confirm deletion for an active session, stop its agent, close its terminal, and remove its history entry. Ended history is removed directly. |
-| **Session aus Verlauf entfernen** | Remove an ended entry through the context menu, without stopping an active session. |
-| **Markieren** | Set or clear a manual **Braucht Eingabe** (Needs input) or **Bereit zum Review** (Ready for review) flag. |
+| **Open terminal** / click the session | Show the existing terminal or attach a new terminal view to the existing session. |
+| **Interrupt** | Send Ctrl+C to that session, for example to interrupt the agent's current turn. The CLI determines how it handles the signal. |
+| **Stop** | Close the corresponding herdr session and its process. Keep the ended entry in history. |
+| **Trash / Delete session** | Confirm deletion for an active session, stop its agent, close its terminal, and remove its history entry. Ended history is removed directly. |
+| **Remove session from history** | Remove an ended entry through the context menu, without stopping an active session. |
+| **Mark** | Set or clear a manual **Needs input** or **Ready for review** flag. |
 
 Stopping or deleting one session leaves the other sessions running. If the backend is unreachable, Herdr retains sessions that might still be running until their state can be checked again.
 
 ### Dashboard filters
 
-- **Alle** (All) includes sessions with open terminals, background sessions, and ended history.
-- **Offene** (Open) includes sessions with an attached VS Code terminal view. It is a view of open terminals, not a count of all running backend processes.
-- **Aufmerksamkeit** (Attention) includes sessions waiting for input or displaying an unread completion, including matching manual flags.
+- **All** includes sessions with open terminals, background sessions, and ended history.
+- **Open** includes sessions with an attached VS Code terminal view. It is a view of open terminals, not a count of all running backend processes.
+- **Attention** includes sessions waiting for input or displaying an unread completion, including matching manual flags.
 
 The status bar's session count also counts attached terminals. Its working, question, and completion indicators can still reflect sessions running in the background.
 
@@ -175,7 +197,7 @@ For other agents, status comes from herdr's integrations or detection. The accur
 
 ## CLI discovery and custom profiles
 
-Use **Herdr: Installierte Agenten erkennen** (Detect installed agents) to see the available profiles. Discovery is repeated when starting a session.
+Use **Herdr: Detect installed agents** to see the available profiles. Discovery is repeated when starting a session.
 
 The extension searches `PATH` and common installation directories. Examples include `/opt/homebrew/bin`, `/usr/local/bin`, `~/.local/bin`, and `~/.cargo/bin` on Unix-like systems, and npm/Scoop locations on Windows. Discovery checks executable files without starting the agents.
 
@@ -212,7 +234,7 @@ The agent `kind` is normally inferred from the executable name. Set it explicitl
 | `herdr.refreshInterval` | `8` | Worktree and changed-file refresh interval in seconds, from 3 to 300. |
 | `herdr.terminalLocation` | `"panel"` | Open session terminals in the terminal panel, or use `"editor"` for editor tabs. |
 
-Session status is updated separately through backend events and polling. `herdr.refreshInterval` controls the Git/worktree refresh interval. **Herdr: Aktualisieren** (Refresh) updates both worktrees and sessions on demand.
+Session status is updated separately through backend events and polling. `herdr.refreshInterval` controls the Git/worktree refresh interval. **Herdr: Refresh** updates both worktrees and sessions on demand.
 
 ## Persistence and process ownership
 
@@ -228,7 +250,7 @@ Terminals created by earlier versions that launched agents directly remain usabl
 
 - **herdr is not found or the terminal bridge is unavailable:** Check the installed herdr build and `herdr.executablePath`, then reload the window. The extension checks that the required CLI commands are available.
 - **An installed agent is missing from the picker:** Run agent detection. Check the executable path, the profile's `kind`, and support in your herdr build. For a custom installation, use an absolute executable path in a profile.
-- **A closed terminal's agent is still running:** Find it in the Herdr tree or the dashboard's **Alle** filter. Click it to reconnect, or use **Beenden** or the trash action to end it.
+- **A closed terminal's agent is still running:** Find it in the Herdr tree or the dashboard's **All** filter. Click it to reconnect, or use **Stop** or the trash action to end it.
 - **A session is disconnected:** Check the backend before deleting it. A disconnected terminal view alone does not mean the backend process has ended.
 - **A worktree cannot be deleted:** Stop its sessions, preserve any working changes and unsaved editor contents, and remove any Git worktree lock. The main checkout is protected.
 
@@ -236,7 +258,7 @@ Open the **Herdr Workbench** output channel in VS Code's Output panel for extens
 
 ## Development
 
-JavaScript runs directly in the extension host; no compilation or npm dependency installation is required.
+JavaScript runs directly in the extension host; no compilation or runtime dependency installation is required. Run `npm ci` to install the release tooling before using `npm run package:marketplace`.
 
 1. Open this repository in VS Code.
 2. Press **F5** and select the **Herdr Workbench** launch configuration.
