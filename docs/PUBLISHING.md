@@ -1,5 +1,7 @@
 # Publishing Herdr Workbench
 
+Version **0.1.0** was published on **2026-10-16** under the `tynamix` publisher. The [public Marketplace listing](https://marketplace.visualstudio.com/items?itemName=tynamix.vscode-herdr) includes the English README, four documentation screenshots and the final terminal-H icon.
+
 ## Release identity
 
 | Field | Value |
@@ -39,7 +41,7 @@ The Marketplace icon is the 256 × 256 PNG at `media/herdr-marketplace-icon.png`
 5. Review the extracted name, version, description and icon, then submit the extension for publication.
 6. Wait for validation and check the resulting listing. Confirm that screenshots load, the source/support/license links work, and the extension can be installed from VS Code.
 
-The expected listing URL after publication is [tynamix.vscode-herdr](https://marketplace.visualstudio.com/items?itemName=tynamix.vscode-herdr). This URL is a target, not a claim that the extension has already been published.
+The public listing is [tynamix.vscode-herdr](https://marketplace.visualstudio.com/items?itemName=tynamix.vscode-herdr).
 
 Browser upload supports an initial release without configuring CLI publishing credentials. Microsoft's [publishing guide](https://code.visualstudio.com/api/working-with-extensions/publishing-extension) covers publisher registration, manual uploads and automated publishing.
 
