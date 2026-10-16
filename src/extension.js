@@ -384,6 +384,8 @@ async function activate(context) {
     return sessions.focus(id);
   });
   command('herdr.interruptSession', input => sessions.interrupt(sessionId(input)));
+  command('herdr.scrollSessionUp', () => sessions.scroll('up'));
+  command('herdr.scrollSessionDown', () => sessions.scroll('down'));
   command('herdr.stopSession', input => sessions.stop(sessionId(input)));
   command('herdr.forgetSession', input => sessions.forget(sessionId(input)));
   command('herdr.deleteSession', async input => {

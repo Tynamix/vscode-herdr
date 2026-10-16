@@ -1,0 +1,85 @@
+name: Marketplace
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Checks and VSIX
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Check Conventional Commit PR title
+        if: github.event_name == 'pull_request'
+        run: node scripts/check-pr-title.js
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+      - run: npm run check
+      - run: npm test
+      - run: npm run package:marketplace
+
+  publish:
+    name: Publish Marketplace release
+    needs: checks
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: marketplace
+    concurrency:
+      group: marketplace-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Sign in to Azure without a stored token (optional)
+        if: vars.MARKETPLACE_AUTH == 'azure'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      - name: Show the public Marketplace identity ID for one-time membership setup
+        if: vars.MARKETPLACE_AUTH == 'azure'
+        run: az rest --url https://app.vssps.visualstudio.com/_apis/profile/profiles/me --resource 499b84ac-1321-427f-aa17-267ca6975798 --query id --output tsv
+      - name: Version, package and publish
+        run: npm run release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          MARKETPLACE_AUTH: ${{ vars.MARKETPLACE_AUTH || 'pat' }}
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      - name: Keep the versioned package for recovery
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: marketplace-vsix-${{ github.sha }}
+          path: dist/herdr-workbench-marketplace.vsix
+          if-no-files-found: ignore
+          retention-days: 30

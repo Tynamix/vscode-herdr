@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Automatically version and publish Marketplace updates from `main` after checks, with GitHub release assets and PAT or Entra ID authentication.
+- Restore the agent-focused layout on session start/open: Herdr left, maximized terminal, terminal list right. Opt out with `herdr.autoArrangeSessions`.
+- Forward trackpad/mouse-wheel and page scrolling to the persistent terminal backend, including full-screen agents and normal terminal history.
+
 ## 0.1.0 — 2026-10-16
 
 Initial preview of Herdr Workbench for Visual Studio Code.
