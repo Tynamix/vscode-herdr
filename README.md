@@ -140,7 +140,7 @@ Herdr automatically creates the worktree in a sibling `<project>-worktrees` dire
 
 ### Delete a worktree
 
-Click the **trash** icon on a linked worktree in the sidebar or dashboard. After confirmation, Herdr removes the checkout directory and its worktree registration through `git worktree remove`. **The branch is retained.** If you delete the selected worktree, Herdr activates an available remaining checkout and removes the deleted folder from the workspace.
+Click the **trash** icon on a linked worktree in the sidebar or dashboard. Choose **Delete worktree** to keep its branch, or **Delete worktree and branch** to also delete the local branch. Detached worktrees only offer worktree deletion. Herdr removes the checkout directory and its worktree registration through `git worktree remove`; branch deletion uses `git branch -d`, never force deletion, and does not delete remote branches. If Git refuses to delete the branch (for example, because it is not fully merged), the worktree is still removed, the branch is retained, and Herdr reports the error. If you delete the selected worktree, Herdr activates an available remaining checkout and removes the deleted folder from the workspace.
 
 The main checkout has no worktree trash action. Deletion is also blocked while the target has running sessions, including background sessions, unsaved editor documents, Git changes, or a worktree lock. Stop the sessions and save, commit, or otherwise preserve the changes first. Git's normal removal checks apply; the extension does not force removal.
 

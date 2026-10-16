@@ -164,9 +164,22 @@ async function activate(context) {
     refreshTimer = setInterval(() => refresh().catch(reportError), seconds * 1000);
   }
 
-  async function resolveWorktree(input) {
-    await refresh();
+  async function resolveWorktree(input, { refreshAll = true } = {}) {
     const requested = typeof input === 'string' ? input : input?.worktreePath;
+    const target = requested || currentPath;
+    const project = !refreshAll && projects.find(project => project.worktrees?.some(worktree => worktree.path === target));
+    if (project) {
+      // Validate the checkout against Git, but do not scan unrelated worktrees
+      // before opening a session. Full refreshes still update the whole catalog.
+      const worktrees = await git.listWorktrees(project.path);
+      const selected = worktrees.find(worktree => worktree.path === target);
+      const worktree = selected && await git.worktreeStatus(selected);
+      if (!worktree || worktree.error) throw new Error('This worktree is no longer available. Refresh the view.');
+      const previous = new Map(project.worktrees.map(worktree => [worktree.path, worktree]));
+      project.worktrees = worktrees.map(tree => tree.path === target ? worktree : { ...previous.get(tree.path), ...tree });
+      return { project, worktree };
+    }
+    await refresh();
     const candidates = projects.flatMap(project => (project.worktrees || []).filter(w => !w.error).map(worktree => ({ project, worktree })));
     const match = candidates.find(candidate => candidate.worktree.path === (requested || currentPath));
     if (match) return match;
@@ -190,7 +203,7 @@ async function activate(context) {
   async function select(input, action) {
     const generation = ++selectionGeneration;
     const isCurrent = () => generation === selectionGeneration;
-    const resolved = await resolveWorktree(input);
+    const resolved = await resolveWorktree(input, { refreshAll: false });
     if (!resolved || !isCurrent()) return;
     await changes.saveDrafts();
     if (!isCurrent()) return;
@@ -320,17 +333,26 @@ async function activate(context) {
       }
     };
     await verify();
+    const deleteBranchAction = 'Delete worktree and branch';
     const choice = await vscode.window.showWarningMessage(`Delete worktree “${worktree.branch || 'detached'}”?`, {
-      modal: true, detail: `${worktree.path}\n\nThe worktree directory will be deleted. The branch will be kept.`
-    }, 'Delete worktree');
-    if (choice !== 'Delete worktree') return;
+      modal: true, detail: `${worktree.path}\n\nThe worktree directory will be deleted. Choose whether to keep or also delete its local branch. Branch deletion is not forced; remote branches are not deleted.`
+    }, 'Delete worktree', ...(worktree.branch ? [deleteBranchAction] : []));
+    if (choice !== 'Delete worktree' && !(worktree.branch && choice === deleteBranchAction)) return;
     await verify();
     const fallback = project.worktrees.find(tree => tree.path !== worktree.path && !tree.error);
     // A project may originally have been added through the checkout being removed.
     const repositoryPath = project.path === worktree.path ? fallback?.path : project.path;
     if (!repositoryPath) throw new Error('No other available checkout was found for this project.');
-    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Deleting worktree' },
-      () => git.removeWorktree(repositoryPath, worktree.path));
+    let branchError;
+    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Deleting worktree' }, async () => {
+      await git.removeWorktree(repositoryPath, worktree.path);
+      if (choice === deleteBranchAction) {
+        try { await git.git(repositoryPath, ['branch', '-d', '--', worktree.branch]); }
+        catch (error) {
+          branchError = new Error(`Worktree deleted, but local branch “${worktree.branch}” could not be deleted: ${error.message}`, { cause: error });
+        }
+      }
+    });
     if (project.path === worktree.path) project.path = repositoryPath;
     const wasSelected = currentPath === worktree.path;
     if (wasSelected) {
@@ -342,13 +364,13 @@ async function activate(context) {
     await saveProjects();
     await refresh();
     if (wasSelected && fallback) await select(fallback.path);
-    if (worktreeContext.switching) return;
     // Manual multi-root workspaces must also drop the deleted folder.
     const folders = vscode.workspace.workspaceFolders || [];
     const index = folders.findIndex(folder => folder.uri.fsPath === worktree.path);
-    if (index !== -1 && !vscode.workspace.updateWorkspaceFolders(index, 1)) {
+    if (!worktreeContext.switching && index !== -1 && !vscode.workspace.updateWorkspaceFolders(index, 1)) {
       throw new Error('Worktree deleted; its folder could not be removed from the workspace.');
     }
+    if (branchError) throw branchError;
   });
   command('herdr.startSession', async input => {
     const resolved = await resolveWorktree(input);
@@ -472,11 +494,8 @@ async function activate(context) {
     { dispose: () => { clearInterval(refreshTimer); clearTimeout(pendingRefresh); } }
   );
   configureRefresh();
-  refresh().then(async () => {
-    if (currentPath && projects.some(p => p.worktrees?.some(w => w.path === currentPath && !w.error))) {
-      try { await select(currentPath); } catch (error) { log.appendLine(error.message); }
-    }
-  }).catch(reportError);
+  if (currentPath) select(currentPath).catch(error => log.appendLine(error.message));
+  else refresh().catch(reportError);
   changed();
 
   // A read-only API is useful for integrations and the extension-host smoke test.
