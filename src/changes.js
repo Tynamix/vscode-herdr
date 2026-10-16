@@ -38,6 +38,9 @@ class Changes {
 
   async applySelection(worktree, generation) {
     if (this.disposed || generation !== this.generation) return;
+    if (!this.vscode.workspace.isTrusted) {
+      throw new Error('Trust this workspace first using "Workspaces: Manage Workspace Trust". VS Code disables the built-in Git extension in Restricted Mode.');
+    }
     const extension = this.vscode.extensions.getExtension('vscode.git');
     if (!extension) throw new Error('The built-in VS Code Git extension is unavailable.');
     const gitExtension = await extension.activate();

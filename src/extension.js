@@ -282,15 +282,11 @@ async function activate(context) {
     if (!base) return;
     const branch = await vscode.window.showInputBox({ title: 'New worktree', prompt: 'New branch name', placeHolder: 'feature/my-task', ignoreFocusOut: true });
     if (!branch) return;
-    const destination = await vscode.window.showSaveDialog({
-      title: 'New worktree directory', saveLabel: 'Create worktree here',
-      defaultUri: vscode.Uri.file(path.join(path.dirname(project.path), `${project.name}-worktrees`, branch.replace(/[^\w.-]+/g, '-')))
-    });
-    if (!destination) return;
+    const destination = await git.findWorktreeDestination(project.path, project.name, branch);
     await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Creating worktree' },
-      () => git.createWorktree(project.path, destination.fsPath, branch, base));
+      () => git.createWorktree(project.path, destination, branch, base));
     await refresh();
-    return destination.fsPath;
+    return destination;
   });
   command('herdr.deleteWorktree', async input => {
     await refresh();

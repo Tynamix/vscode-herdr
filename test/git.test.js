@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { git, parseWorktrees, countChanges, inspectProject, listWorktrees, listBranches, worktreeStatus, createWorktree, removeWorktree } = require('../src/git');
+const { git, parseWorktrees, countChanges, inspectProject, listWorktrees, listBranches, worktreeStatus, findWorktreeDestination, createWorktree, removeWorktree } = require('../src/git');
 
 async function fixture(t) {
   const directory = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'herdr-git-test-')));
@@ -86,6 +86,14 @@ test('discovers linked worktrees and deduplicates their project identity', async
   await fs.writeFile(path.join(linked, 'a new file.txt'), 'new\n');
   assert.equal((await worktreeStatus(trees[1])).changedFiles, 1);
   assert.equal((await worktreeStatus(trees[0])).changedFiles, 0);
+});
+
+test('automatically finds portable, unused worktree destinations beside the project', async t => {
+  const { directory, root } = await fixture(t);
+  const destination = await findWorktreeDestination(root, path.basename(root), 'feature/auto-location');
+  assert.equal(destination, path.join(directory, 'main project-worktrees', 'worktree-feature-auto-location'));
+  await createWorktree(root, destination, 'feature/auto-location');
+  assert.equal(await findWorktreeDestination(root, path.basename(root), 'feature/auto-location'), `${destination}-2`);
 });
 
 test('detects real staged renames, deleted files and detached HEAD', async t => {

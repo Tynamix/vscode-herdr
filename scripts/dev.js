@@ -4,6 +4,8 @@
 // host in inspect-break mode crashes on some VS Code / Electron installations.
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const os = require('node:os');
+const { createHash } = require('node:crypto');
 const http = require('node:http');
 const net = require('node:net');
 const { spawn, execFile } = require('node:child_process');
@@ -13,6 +15,12 @@ const root = path.resolve(__dirname, '..');
 const directory = path.join(root, '.vscode-dev');
 const port = 9333;
 const targetFile = path.join(directory, 'debug-target.json');
+const userDataDirectory = developmentUserDataDirectory(root);
+
+function developmentUserDataDirectory(checkout, home = os.homedir()) {
+  const id = createHash('sha256').update(checkout).digest('hex').slice(0, 16);
+  return path.join(home, '.herdr-dev', id, 'user');
+}
 
 async function belongsToDevelopmentWindow(execute = promisify(execFile)) {
   try {
@@ -23,7 +31,7 @@ async function belongsToDevelopmentWindow(execute = promisify(execFile)) {
         const { stdout: processInfo } = await execute('ps', ['-p', pid, '-o', 'ppid=', '-o', 'command=']);
         const match = /^\s*(\d+)\s+([^\n]+)$/.exec(processInfo.trim());
         if (!match) break;
-        if (match[2].includes(`--user-data-dir=${path.join(directory, 'user')}`)
+        if (match[2].includes(`--user-data-dir=${userDataDirectory}`)
           && match[2].includes(`--extensionDevelopmentPath=${root}`)) return true;
         pid = match[1];
       }
@@ -91,7 +99,7 @@ async function main() {
   console.log('Herdr-Entwicklungsfenster wird gestartet …');
   const child = spawn(executable, [
     '--new-window', `--extensionDevelopmentPath=${root}`,
-    `--user-data-dir=${path.join(directory, 'user')}`,
+    `--user-data-dir=${userDataDirectory}`,
     `--extensions-dir=${path.join(directory, 'extensions')}`,
     '--disable-extensions', `--inspect-extensions=${port}`, workspace
   ], { env, detached: true, stdio: ['ignore', 'ignore', 'ignore'] });
@@ -112,8 +120,8 @@ async function main() {
     } catch { /* The GUI and its extension host are still starting. */ }
     await new Promise(resolve => setTimeout(resolve, 200));
   }
-  throw new Error(`Der Extension-Host wurde auf Port ${port} nicht bereit. Logs: ${path.join(directory, 'user', 'logs')}`);
+  throw new Error(`Der Extension-Host wurde auf Port ${port} nicht bereit. Logs: ${path.join(userDataDirectory, 'logs')}`);
 }
 
 if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });
-module.exports = { belongsToDevelopmentWindow };
+module.exports = { belongsToDevelopmentWindow, developmentUserDataDirectory };

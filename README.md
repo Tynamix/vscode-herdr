@@ -135,9 +135,8 @@ Click the **branch** icon on a project, or run **Herdr: Create worktree with a n
 
 1. Select a starting point from the local branches, already known remote branches, or `HEAD`. Choose **Enter branch or commit …** to enter a branch, tag, or commit manually.
 2. Enter a name for the new branch.
-3. Choose the new worktree's destination directory.
 
-Herdr asks Git to create the worktree and new branch from the selected commit, then refreshes the project tree. Remote branches are read from the repository's existing refs; this action does not fetch them automatically.
+Herdr automatically creates the worktree in a sibling `<project>-worktrees` directory, using a portable name based on the branch. If that path already exists, it chooses the next available numbered name. Herdr asks Git to create the worktree and new branch from the selected commit, then refreshes the project tree. Remote branches are read from the repository's existing refs; this action does not fetch them automatically.
 
 ### Delete a worktree
 
@@ -279,7 +278,7 @@ JavaScript runs directly in the extension host; no compilation or runtime depend
 
 The launcher opens VS Code normally, then attaches the debugger to its running extension host on port `9333`. This avoids the direct extension-host debug startup that can crash on some VS Code/Electron installations. Breakpoints in `src/` still work.
 
-The development window uses its own profile, extensions directory, and workspace under `.vscode-dev/`. Other installed extensions are disabled there; built-in Git and terminal features remain available. Your ordinary VS Code window keeps its own configuration. Trust the development workspace if prompted.
+The development window uses its own extensions directory and workspace under `.vscode-dev/`. Its isolated profile lives in `~/.herdr-dev/<checkout-id>/user` to avoid Unix socket path limits in deeply nested checkouts. Other installed extensions are disabled there; built-in Git and terminal features remain available. Your ordinary VS Code window keeps its own configuration. Trust the development workspace if prompted.
 
 Pressing **F5** again reconnects to the existing development window. **Shift+F5** detaches the debugger and leaves that window and its terminals open. The debugger can reconnect after extension-host restarts; the launcher checks ownership before reusing an inspector. An unrelated process using port `9333` must be stopped or moved before this launcher can use the port. After source changes, run **Developer: Reload Window** in the development window.
 
