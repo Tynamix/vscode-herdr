@@ -66,6 +66,7 @@
     "test:integration": "node scripts/integration.js",
     "test:worktree": "node scripts/worktree-integration.js",
     "package": "node scripts/package.js",
+    "prepackage:marketplace": "node -e \"require('node:fs').mkdirSync('dist', { recursive: true })\"",
     "package:marketplace": "vsce package --no-dependencies --out dist/herdr-workbench-marketplace.vsix",
     "release": "semantic-release",
     "screenshots": "node scripts/screenshots.js"

@@ -30,6 +30,21 @@ async function fixture(t) {
   return { cwd, env: { ...process.env, ...env } };
 }
 
+test('Marketplace prepackaging creates dist in a fresh checkout and preserves existing output', async t => {
+  const { cwd } = await fixture(t);
+  const { scripts } = require('../package.json');
+  await fs.writeFile(path.join(cwd, 'package.json'), JSON.stringify({ scripts: {
+    'prepackage:marketplace': scripts['prepackage:marketplace'],
+    'package:marketplace': 'node -e "require(\'node:fs\').accessSync(\'dist\')"'
+  } }));
+  await assert.rejects(fs.access(path.join(cwd, 'dist')), { code: 'ENOENT' });
+  await execute('npm', ['run', 'package:marketplace'], { cwd });
+  const output = path.join(cwd, 'dist', 'existing.vsix');
+  await fs.writeFile(output, 'existing package');
+  await execute('npm', ['run', 'package:marketplace'], { cwd });
+  assert.equal(await fs.readFile(output, 'utf8'), 'existing package');
+});
+
 test('Conventional Commits choose patch, minor and major; documentation alone makes no release', async () => {
   const { analyzeCommits } = await import('@semantic-release/commit-analyzer');
   const options = config.plugins[0][1];
