@@ -88,10 +88,32 @@ async function worktreeStatus(tree) {
   }
 }
 
+function portableDirectoryName(value, fallback) {
+  const name = value.replace(/[<>:"/\\|?*\x00-\x1f]+/g, '-').replace(/[. ]+$/g, '').slice(0, 100);
+  return name && name !== '.' && name !== '..' ? name : fallback;
+}
+
+async function findWorktreeDestination(projectPath, projectName, branch) {
+  const projectDirectory = portableDirectoryName(projectName, 'project');
+  const branchDirectory = `worktree-${portableDirectoryName(branch, 'branch')}`;
+  const parent = path.join(path.dirname(projectPath), `${projectDirectory}-worktrees`);
+  for (let index = 1; ; index++) {
+    const suffix = index === 1 ? '' : `-${index}`;
+    const destination = path.join(parent, `${branchDirectory}${suffix}`);
+    try {
+      await fs.access(destination);
+    } catch (error) {
+      if (error.code === 'ENOENT') return destination;
+      throw error;
+    }
+  }
+}
+
 async function createWorktree(cwd, destination, branch, base = 'HEAD') {
   if (!branch || branch.startsWith('-')) throw new Error('Enter a valid new branch name.');
   await git(cwd, ['check-ref-format', '--branch', branch]);
   const commit = (await git(cwd, ['rev-parse', '--verify', '--end-of-options', `${base}^{commit}`])).trim();
+  await fs.mkdir(path.dirname(destination), { recursive: true });
   await git(cwd, ['worktree', 'add', '-b', branch, '--', path.resolve(destination), commit], { timeout: 60000 });
   return listWorktrees(cwd);
 }
@@ -105,4 +127,4 @@ async function removeWorktree(cwd, target) {
   await git(cwd, ['worktree', 'remove', '--', worktree.path], { timeout: 60000 });
 }
 
-module.exports = { git, parseWorktrees, countChanges, listWorktrees, listBranches, inspectProject, worktreeStatus, createWorktree, removeWorktree };
+module.exports = { git, parseWorktrees, countChanges, listWorktrees, listBranches, inspectProject, worktreeStatus, findWorktreeDestination, createWorktree, removeWorktree };

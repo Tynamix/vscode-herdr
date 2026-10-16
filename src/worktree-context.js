@@ -24,7 +24,7 @@ class WorktreeContext {
     if (!transfer) return;
     // A folder window has a different storage identity from a named workspace.
     // Transfer only this extension's memento before creating its managers.
-    for (const [name, value] of Object.entries(transfer)) await context.workspaceState.update(name, value);
+    await Promise.all(Object.entries(transfer).map(([name, value]) => context.workspaceState.update(name, value)));
     delete transfers[key];
     await context.globalState.update('worktreeWorkspaceTransfers', transfers);
     if (matchesFolderTransfer) {

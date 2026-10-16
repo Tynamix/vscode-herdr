@@ -12,6 +12,7 @@ class Changes {
     this.reportError = reportError;
     this.context = context;
     this.commitDrafts = new Map(context.workspaceState.get('gitCommitDrafts', []));
+    this.savedDrafts = JSON.stringify([...this.commitDrafts]);
     this.restoredDrafts = new Set();
     this.tree = vscode.window.createTreeView('herdr.changes', { treeDataProvider: this, showCollapseAll: true });
     context.subscriptions.push(this.emitter, this.tree,
@@ -25,10 +26,12 @@ class Changes {
 
   select(worktree) {
     const generation = ++this.generation;
-    this.listener?.dispose();
-    this.repository = undefined;
     this.tree.description = worktree.branch || path.basename(worktree.path);
-    this.emitter.fire();
+    if (this.repository?.rootUri.fsPath !== worktree.path) {
+      this.listener?.dispose();
+      this.repository = undefined;
+      this.emitter.fire();
+    }
     // Serialize native repository changes, so an older click cannot close the
     // repository opened by a newer click. Unstarted selections are superseded.
     const operation = this.pending.catch(() => {}).then(() => this.applySelection(worktree, generation));
@@ -38,6 +41,9 @@ class Changes {
 
   async applySelection(worktree, generation) {
     if (this.disposed || generation !== this.generation) return;
+    if (!this.vscode.workspace.isTrusted) {
+      throw new Error('Trust this workspace first using "Workspaces: Manage Workspace Trust". VS Code disables the built-in Git extension in Restricted Mode.');
+    }
     const extension = this.vscode.extensions.getExtension('vscode.git');
     if (!extension) throw new Error('The built-in VS Code Git extension is unavailable.');
     const gitExtension = await extension.activate();
@@ -88,8 +94,9 @@ class Changes {
     }
     // Open after closing the old providers. Doing this in the opposite order can
     // close the newly selected worktree together with its previous main provider.
-    const wasOpen = this.api.repositories.some(repository => repository.rootUri.toString() === uri.toString());
-    const repository = await this.api.openRepository(uri);
+    const existing = this.api.repositories.find(repository => repository.rootUri.toString() === uri.toString());
+    const wasOpen = !!existing;
+    const repository = existing || await this.api.openRepository(uri);
     if (repository && (!wasOpen || !this.restoredDrafts.has(uri.toString())) && !repository.inputBox.value && this.commitDrafts.has(uri.toString())) {
       repository.inputBox.value = this.commitDrafts.get(uri.toString());
     }
@@ -101,13 +108,20 @@ class Changes {
     for (const repository of this.api?.repositories || []) {
       this.commitDrafts.set(repository.rootUri.toString(), repository.inputBox.value);
     }
-    await this.context.workspaceState.update('gitCommitDrafts', [...this.commitDrafts]);
+    const drafts = [...this.commitDrafts];
+    const serialized = JSON.stringify(drafts);
+    if (this.savedDrafts !== serialized) {
+      await this.context.workspaceState.update('gitCommitDrafts', drafts);
+      this.savedDrafts = serialized;
+    }
   }
 
   setRepository(repository) {
-    this.listener?.dispose();
-    this.repository = repository;
-    this.listener = repository.state.onDidChange(() => this.emitter.fire());
+    if (this.repository !== repository) {
+      this.listener?.dispose();
+      this.repository = repository;
+      this.listener = repository.state.onDidChange(() => this.emitter.fire());
+    }
     this.emitter.fire();
   }
 

@@ -103,6 +103,10 @@ class HerdrBackend {
       if (running || !start) return running;
     }
     this.starting = (async () => {
+      if (this.socketPath) {
+        try { await this.rpc('ping', {}, 500); return true; }
+        catch { /* Locate the server again if its previous socket is stale. */ }
+      }
       const status = await this.locate();
       if (status.running) return true;
       if (!start) return false;

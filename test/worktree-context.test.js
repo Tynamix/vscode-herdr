@@ -110,3 +110,35 @@ test('superseded selections and rejected folder mutations do not claim a success
   await assert.rejects(manager.switch(resolved), /could not/);
   assert.equal(manager.switching, false);
 });
+
+test('workspace restoration batches independent state updates and retains the transfer until all are saved', async t => {
+  const { context, vscode } = await fixture(t);
+  const key = vscode.workspace.workspaceFile.toString();
+  const values = { projects: [{ id: 'one' }], sessions: [{ id: 'session' }], selectedWorktree: '/project' };
+  await context.globalState.update('worktreeWorkspaceTransfers', { [key]: values });
+  const workspaceState = memento();
+  const update = workspaceState.update;
+  const pending = [];
+  workspaceState.update = (name, value) => new Promise(resolve => {
+    pending.push({ name, async finish() { await update(name, value); resolve(); } });
+  });
+  const restored = WorktreeContext.restore(vscode, { globalState: context.globalState, workspaceState });
+  assert.deepEqual(pending.map(update => update.name), Object.keys(values));
+  await Promise.all(pending.slice(1).map(update => update.finish()));
+  assert.deepEqual(context.globalState.get('worktreeWorkspaceTransfers'), { [key]: values });
+  await pending[0].finish();
+  await restored;
+  assert.deepEqual(workspaceState.values, values);
+  assert.deepEqual(context.globalState.get('worktreeWorkspaceTransfers'), {});
+});
+
+test('a failed workspace-state restoration keeps its transfer available for retry', async t => {
+  const { context, vscode } = await fixture(t);
+  const key = vscode.workspace.workspaceFile.toString();
+  const values = { projects: [{ id: 'one' }], sessions: [{ id: 'session' }] };
+  await context.globalState.update('worktreeWorkspaceTransfers', { [key]: values });
+  const workspaceState = memento();
+  workspaceState.update = async () => { throw new Error('Storage unavailable'); };
+  await assert.rejects(WorktreeContext.restore(vscode, { globalState: context.globalState, workspaceState }), /Storage unavailable/);
+  assert.deepEqual(context.globalState.get('worktreeWorkspaceTransfers'), { [key]: values });
+});

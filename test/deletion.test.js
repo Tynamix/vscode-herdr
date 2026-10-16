@@ -62,8 +62,8 @@ async function fixture(t, { addedThroughLinked = false } = {}) {
       createTreeView(name, options) { providers.set(name, options.treeDataProvider); return disposable(); },
       onDidChangeWindowState: disposable,
       showErrorMessage: message => ui.errors.push(message),
-      async showWarningMessage(_message, options, action) {
-        ui.warnings.push({ options, action });
+      async showWarningMessage(_message, options, ...actions) {
+        ui.warnings.push({ options, action: actions[0], actions });
         await ui.duringConfirm();
         return ui.response;
       },
@@ -108,6 +108,45 @@ test('deleting the selected worktree restores the remaining checkout and a proje
   assert.equal(data.selectedWorktree, root);
   assert.equal(workspace.workspaceFolders.length, 0);
   assert.ok((await git.listBranches(root)).some(branch => branch.name === 'feature/delete'));
+});
+
+test('the delete dialog offers keeping the branch or deleting it with the worktree', async t => {
+  const { root, linked, ui, execute, api, data } = await fixture(t, { addedThroughLinked: true });
+  await execute('herdr.selectWorktree');
+  ui.response = 'Delete worktree and branch';
+  await execute('herdr.deleteWorktree');
+  assert.deepEqual(ui.warnings[0].actions, ['Delete worktree', 'Delete worktree and branch']);
+  await assert.rejects(fs.access(linked));
+  assert.ok(!(await git.listBranches(root)).some(branch => branch.name === 'feature/delete'));
+  assert.equal(api.getSnapshot().selectedWorktree, root);
+  assert.equal(data.projects[0].path, root);
+});
+
+test('failed branch deletion preserves unmerged commits and still cleans up the deleted worktree', async t => {
+  const { root, linked, ui, execute, api, data, workspace } = await fixture(t);
+  await git.git(linked, ['config', 'user.name', 'Test']);
+  await git.git(linked, ['config', 'user.email', 'test@example.invalid']);
+  await fs.writeFile(path.join(linked, 'file.txt'), 'unmerged commit\n');
+  await git.git(linked, ['add', '.']);
+  await git.git(linked, ['-c', 'commit.gpgsign=false', 'commit', '-m', 'Unmerged change']);
+  const commit = (await git.git(linked, ['rev-parse', 'HEAD'])).trim();
+  await execute('herdr.selectWorktree');
+  ui.response = 'Delete worktree and branch';
+  await assert.rejects(execute('herdr.deleteWorktree'), /Worktree deleted, but local branch/);
+  await assert.rejects(fs.access(linked));
+  assert.equal((await git.git(root, ['rev-parse', 'refs/heads/feature/delete'])).trim(), commit);
+  assert.equal(api.getSnapshot().selectedWorktree, root);
+  assert.equal(data.selectedWorktree, root);
+  assert.equal(workspace.workspaceFolders.length, 0);
+  assert.equal(api.getSnapshot().projects[0].worktrees.length, 1);
+});
+
+test('detached worktrees do not offer branch deletion', async t => {
+  const { linked, ui, execute } = await fixture(t);
+  await git.git(linked, ['checkout', '--detach']);
+  await execute('herdr.deleteWorktree');
+  assert.deepEqual(ui.warnings[0].actions, ['Delete worktree']);
+  await fs.access(linked);
 });
 
 test('worktree deletion refuses background agents, dirty editors and changes that appear during confirmation', async t => {
