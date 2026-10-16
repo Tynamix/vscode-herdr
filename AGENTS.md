@@ -21,5 +21,5 @@
   `fix` and `perf` trigger a patch release, and breaking changes trigger a major
   release. Documentation and maintenance-only changes do not trigger a release.
 
-See [the publishing guide](../docs/PUBLISHING.md#commit-titles-and-version-numbers)
+See [the publishing guide](docs/PUBLISHING.md#commit-titles-and-version-numbers)
 for the release workflow and versioning rules.
