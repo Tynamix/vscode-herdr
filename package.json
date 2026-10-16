@@ -67,6 +67,7 @@
     "test:worktree": "node scripts/worktree-integration.js",
     "package": "node scripts/package.js",
     "package:marketplace": "vsce package --no-dependencies --out dist/herdr-workbench-marketplace.vsix",
+    "release": "semantic-release",
     "screenshots": "node scripts/screenshots.js"
   },
   "contributes": {
@@ -130,6 +131,14 @@
         "icon": "$(debug-pause)"
       },
       {
+        "command": "herdr.scrollSessionUp",
+        "title": "Herdr: Scroll session up one page"
+      },
+      {
+        "command": "herdr.scrollSessionDown",
+        "title": "Herdr: Scroll session down one page"
+      },
+      {
         "command": "herdr.stopSession",
         "title": "Herdr: Stop session",
         "icon": "$(debug-stop)"
@@ -161,6 +170,18 @@
         "command": "herdr.detectClis",
         "title": "Herdr: Detect installed agents",
         "icon": "$(search)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "herdr.scrollSessionUp",
+        "key": "pageup",
+        "when": "terminalFocus && herdr.sessionTerminalActive"
+      },
+      {
+        "command": "herdr.scrollSessionDown",
+        "key": "pagedown",
+        "when": "terminalFocus && herdr.sessionTerminalActive"
       }
     ],
     "viewsContainers": {
@@ -356,11 +377,19 @@
           ],
           "default": "panel",
           "description": "Open CLI sessions in the terminal panel or as editor tabs."
+        },
+        "herdr.autoArrangeSessions": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "When starting or opening a panel session, show Herdr on the left, maximize the terminal panel and keep the terminal list visible on the right. Sets workspace-level sidebar and terminal-tab preferences. Editor terminals keep their normal layout."
         }
       }
     }
   },
   "devDependencies": {
-    "@vscode/vsce": "^4.0.0"
+    "@vscode/vsce": "^4.0.0",
+    "conventional-changelog-conventionalcommits": "^9.3.1",
+    "semantic-release": "^25.0.9"
   }
 }

@@ -11,6 +11,7 @@ node_modules/**
 package-lock.json
 .vscodeignore
 .gitignore
+.releaserc.json
 docs/PUBLISHING.md
 docs/SCREENSHOTS.md
 media/herdr-marketplace.png

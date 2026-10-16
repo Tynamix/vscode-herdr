@@ -105,6 +105,36 @@ async function main() {
     await backend.stop(workspaceId);
     workspaceId = undefined;
     assert.equal((await backend.snapshot()).workspaces.length, 0);
+
+    const scrollWorkspace = await backend.create(directory, 'Offline scroll fixture');
+    paneId = scrollWorkspace.root_pane.pane_id;
+    workspaceId = scrollWorkspace.workspace.workspace_id;
+    await backend.run(paneId, `${quoteShell(process.execPath)} ${quoteShell(path.join(__dirname, 'fixture-scroll.mjs'))}`);
+    output = '';
+    const scrollBridge = attach();
+    await scrollBridge.ready;
+    await until(() => output.includes('SCROLL_HISTORY_READY'), 'normal-screen scroll fixture');
+    output = '';
+    scrollBridge.handleInput('\x1b[5~');
+    await until(async () => output.length > 0 && (await backend.rpc('pane.read', { pane_id: paneId, source: 'visible' })).read.text.includes('SCROLL_HISTORY_070'),
+      'Page Up renders backend history rather than scrolling local frame snapshots');
+    scrollBridge.handleInput('t');
+    await until(() => output.includes('TUI_SCROLL_READY'), 'mouse-aware alternate-screen fixture');
+    scrollBridge.handleInput('\x1b[<64;10;5M');
+    scrollBridge.handleInput('\x1b[<65;10;5M');
+    scrollBridge.handleInput('\x1b[5~');
+    scrollBridge.handleInput('\x1b[6~');
+    const expectedInput = ['\x1b[<64;10;5M', '\x1b[<65;10;5M', '\x1b[5~', '\x1b[6~'].map(text => Buffer.from(text).toString('hex'));
+    await until(async () => {
+      try {
+        const input = await fs.readFile(path.join(directory, '.herdr-scroll-input'), 'utf8');
+        // PTY reads may combine several events into a single chunk.
+        return input.replaceAll('\n', '') === expectedInput.join('');
+      } catch { return false; }
+    }, 'wheel and page events delivered to the TUI');
+    checks.push('Page Up renders server-owned history; trackpad wheel and page keys reach a mouse-aware full-screen TUI through the real bridge');
+    await backend.stop(workspaceId);
+    workspaceId = undefined;
     assert.deepEqual(errors, []);
     console.log(JSON.stringify({ ok: true, backend: info.version, checks }, null, 2));
   } catch (error) {

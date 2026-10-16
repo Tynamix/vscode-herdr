@@ -37,12 +37,13 @@ function fixture(t, { saved = [], terminals = [], snapshot } = {}) {
     workspaceState: { get: (key, fallback) => data[key] ?? fallback, update: async (key, value) => { data[key] = structuredClone(value); } } };
   const vscode = {
     ThemeIcon: class {}, TerminalLocation: { Panel: 1, Editor: 2 },
-    workspace: { isTrusted: true, getConfiguration: () => ({ get: () => 'panel' }) },
+    commands: { async executeCommand(...args) { calls.push(['command', ...args]); } },
+    workspace: { isTrusted: true, getConfiguration: () => ({ get: (key, fallback) => key === 'terminalLocation' ? 'panel' : key === 'autoArrangeSessions' ? false : fallback }) },
     window: { terminals,
       onDidOpenTerminal: events.open.subscribe, onDidCloseTerminal: events.close.subscribe, onDidChangeActiveTerminal: events.active.subscribe,
       createTerminal(options) {
         const terminal = { creationOptions: options, name: options.name,
-          show() { events.active.fire(terminal); },
+          show() { vscode.window.activeTerminal = terminal; events.active.fire(terminal); },
           dispose() { terminals.splice(terminals.indexOf(terminal), 1); options.pty?.close(); events.close.fire(terminal); } };
         terminals.push(terminal); events.open.fire(terminal);
         return terminal;
@@ -51,7 +52,7 @@ function fixture(t, { saved = [], terminals = [], snapshot } = {}) {
   };
   const errors = [];
   const manager = new Sessions(vscode, context, () => {}, error => errors.push(error), { backend,
-    makeController: () => ({ ready: Promise.resolve(), close() {}, dispose() {} }) });
+    makeController: () => ({ ready: Promise.resolve(), close() {}, dispose() {}, scroll(direction) { calls.push(['scroll', direction]); } }) });
   t.after(() => { for (const disposable of context.subscriptions) disposable.dispose(); });
   return { manager, vscode, events, calls, errors, data, state, backend };
 }
@@ -288,7 +289,7 @@ test('legacy direct terminals remain attached without relaunching them', t => {
   assert.equal(manager.find('old').status, 'unknown');
   assert.equal(manager.find('old').attention, 'input');
   assert.equal(manager.live.has('old'), true);
-  assert.deepEqual(calls, []);
+  assert.deepEqual(calls.filter(call => call[0] !== 'command'), []);
   assert.equal(restoreSessions([{ status: 'running' }])[0].status, 'detached');
 });
 
@@ -305,5 +306,19 @@ test('untrusted workspaces cannot start a server or CLI', async t => {
   const { manager, vscode, calls } = fixture(t);
   vscode.workspace.isTrusted = false;
   await assert.rejects(manager.start(tree, project, profile), /trusted/);
-  assert.deepEqual(calls, []);
+  assert.deepEqual(calls.filter(call => call[0] !== 'command'), []);
+});
+
+test('page scrolling and its keybinding context follow only the active managed terminal', async t => {
+  const { manager, vscode, calls } = fixture(t);
+  const { id } = await manager.start(tree, project, profile);
+  assert.deepEqual(calls.findLast(call => call[1] === 'setContext'), ['command', 'setContext', 'herdr.sessionTerminalActive', true]);
+  manager.scroll('up');
+  assert.deepEqual(calls.at(-1), ['scroll', 'up']);
+  manager.live.get(id).terminal.dispose();
+  manager.scroll('down');
+  assert.deepEqual(calls.findLast(call => call[1] === 'setContext'), ['command', 'setContext', 'herdr.sessionTerminalActive', false]);
+  vscode.window.activeTerminal = {};
+  manager.scroll('down');
+  assert.equal(calls.filter(call => call[0] === 'scroll').length, 1);
 });

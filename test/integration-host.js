@@ -137,6 +137,10 @@ async function run() {
     await until(() => vscode.workspace.workspaceFolders.length === 2);
     assert.equal(vscode.workspace.workspaceFolders[0].uri.fsPath, process.env.HERDR_TEST_REPO);
     checks.push('Multi-root adds the worktree and preserves the original project');
+    const terminalConfig = vscode.workspace.getConfiguration('terminal.integrated');
+    await terminalConfig.update('tabs.enabled', false, vscode.ConfigurationTarget.Workspace);
+    await terminalConfig.update('tabs.location', 'left', vscode.ConfigurationTarget.Workspace);
+    await vscode.commands.executeCommand('workbench.action.positionPanelRight');
     const session = await vscode.commands.executeCommand('herdr.startSession', { worktreePath: worktree.path, profileId: 'smoke' });
     backendSession = session.backendSession;
     const current = () => api.getSnapshot().sessions.find(s => s.id === session.id);
@@ -148,6 +152,24 @@ async function run() {
     assert.equal((await fs.readFile(path.join(worktree.path, '.herdr-smoke-cwd'), 'utf8')).trim(), await fs.realpath(worktree.path));
     let terminal = vscode.window.terminals.find(t => t.name === finished.terminalName);
     assert.ok(terminal, 'Real herdr-backed integrated terminal was created');
+    function verifySessionLayout() {
+      const config = vscode.workspace.getConfiguration('terminal.integrated');
+      assert.equal(config.get('tabs.enabled'), true);
+      assert.equal(config.get('tabs.location'), 'right');
+      assert.equal(config.get('tabs.hideCondition'), 'never');
+      assert.equal(vscode.workspace.getConfiguration('workbench').get('sideBar.location'), 'left');
+      assert.equal(vscode.window.activeTerminal, terminal);
+    }
+    verifySessionLayout();
+    // Reopening an already attached session must restore rather than toggle.
+    await vscode.commands.executeCommand('herdr.focusSession', session.id);
+    verifySessionLayout();
+    await terminalConfig.update('tabs.location', 'left', vscode.ConfigurationTarget.Workspace);
+    await vscode.commands.executeCommand('workbench.action.positionPanelLeft');
+    await vscode.commands.executeCommand('workbench.action.closePanel');
+    await vscode.commands.executeCommand('herdr.focusSession', session.id);
+    verifySessionLayout();
+    checks.push('Session start and repeated focus restore the agent layout and active terminal from changed panel/tab arrangements');
     terminal.sendText('work', true);
     await until(() => current()?.indicator.state === 'working');
     terminal.sendText('block', true);

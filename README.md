@@ -65,6 +65,8 @@ To try the source in a separate development window instead, see [Development](#d
 
 Maintainers: see [Publishing to the Marketplace](docs/PUBLISHING.md) for publisher setup and the validated release package, and [Screenshot workflow](docs/SCREENSHOTS.md) to reproduce the documentation scenes.
 
+Marketplace updates are automated after successful checks on `main`, using Conventional Commit titles for versioning. See [automated publishing setup](docs/PUBLISHING.md#one-time-github-setup) for GitHub configuration and publishing credentials.
+
 ## First session
 
 1. Open the **Herdr** icon in the Activity Bar.
@@ -75,6 +77,8 @@ Maintainers: see [Publishing to the Marketplace](docs/PUBLISHING.md) for publish
 6. Open **Herdr: Open session overview**, or click the Herdr session count in the status bar, to see the dashboard.
 
 You can repeat these steps to add more projects and start more sessions. Multiple sessions in the same worktree share the same files. Use separate worktrees when the sessions need separate working directories.
+
+Panel sessions automatically use an agent-focused layout when started or opened: **Herdr on the left, a maximized terminal in the main area, and the terminal list on the right**, even with only one terminal. Opening a session restores this arrangement rather than toggling it. Existing editor tabs and unrelated terminals are kept. Set `herdr.autoArrangeSessions` to `false` to keep your manual layout; `herdr.terminalLocation: "editor"` also keeps the normal editor layout. Sidebar and terminal-tab preferences are set at workspace level, not globally; disabling automatic arrangement stops future layout changes but does not undo the current arrangement or those preferences.
 
 ## Projects, worktrees, sessions, and terminals
 
@@ -168,6 +172,12 @@ Click the session in either sidebar tree, or use **Open terminal**, to open a te
 
 Stopping or deleting one session leaves the other sessions running. If the backend is unreachable, Herdr retains sessions that might still be running until their state can be checked again.
 
+### Scrolling conversations
+
+Scroll over the session terminal with a trackpad or mouse wheel. Herdr forwards the event to the agent's own conversation view when it supports mouse scrolling; ordinary terminal output uses the backend's scrollback instead of VS Code's local frame buffer. **Page Up / Page Down** scroll by a page (on Mac keyboards, **Fn + ↑ / ↓**). These shortcuts apply only to an active Herdr-backed terminal; unrelated terminals keep their usual keybindings. An agent can still interpret page keys itself, so its own bindings/settings determine navigation inside a full-screen conversation.
+
+The renderer captures mouse reports for scrolling. Mouse clicks are not forwarded by the current backend control protocol; use keyboard navigation inside an agent and VS Code's selection modifier when selecting terminal text.
+
 ### Dashboard filters
 
 - **All** includes sessions with open terminals, background sessions, and ended history.
@@ -235,6 +245,7 @@ The agent `kind` is normally inferred from the executable name. Set it explicitl
 | `herdr.agentProfiles` | `[]` | Custom profiles added to the discovered defaults; matching IDs replace defaults. |
 | `herdr.refreshInterval` | `8` | Worktree and changed-file refresh interval in seconds, from 3 to 300. |
 | `herdr.terminalLocation` | `"panel"` | Open session terminals in the terminal panel, or use `"editor"` for editor tabs. |
+| `herdr.autoArrangeSessions` | `true` | Restore the agent-focused panel layout when starting or opening a session. Does not rearrange editor terminals. |
 
 Session status is updated separately through backend events and polling. `herdr.refreshInterval` controls the Git/worktree refresh interval. **Herdr: Refresh** updates both worktrees and sessions on demand.
 

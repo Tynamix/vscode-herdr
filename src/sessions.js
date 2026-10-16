@@ -5,6 +5,7 @@ const path = require('node:path');
 const { restoreSessions } = require('./model');
 const { HerdrBackend } = require('./herdr-backend');
 const { HerdrTerminal } = require('./herdr-terminal');
+const { showSession } = require('./session-layout');
 const { discoverProfiles, commandExecutable, quoteShell } = require('./cli-discovery');
 
 class Sessions {
@@ -26,10 +27,12 @@ class Sessions {
       vscode.window.onDidOpenTerminal(terminal => this.reconnect(terminal)),
       vscode.window.onDidCloseTerminal(terminal => this.closed(terminal)),
       vscode.window.onDidChangeActiveTerminal(terminal => {
+        this.updateTerminalContext(terminal);
         for (const [id, runtime] of this.live) if (runtime.terminal === terminal && !this.attaching.has(id)) this.markSeen(id);
       }), this
     );
     for (const terminal of vscode.window.terminals) this.reconnect(terminal);
+    this.updateTerminalContext(vscode.window.activeTerminal);
     this.timer = setInterval(() => this.refresh().catch(() => {}), 1500);
     this.timer.unref?.();
     this.ready.then(() => this.refresh()).catch(reportError);
@@ -109,7 +112,7 @@ class Sessions {
 
   async attach(session) {
     const existing = this.live.get(session.id);
-    if (existing) { existing.terminal.show(); return; }
+    if (existing) { await this.showTerminal(existing.terminal); return; }
     if (this.attaching.has(session.id)) return;
     this.attaching.add(session.id);
     let runtime;
@@ -117,6 +120,7 @@ class Sessions {
       const controller = this.makeController(session.paneId, error => {
         if (this.live.get(session.id) !== runtime) return;
         this.live.delete(session.id);
+        this.updateTerminalContext(this.vscode.window.activeTerminal);
         this.changed();
         if (error && !this.disposed && !this.attaching.has(session.id)) this.reportError(error);
       });
@@ -128,7 +132,7 @@ class Sessions {
       });
       runtime = { terminal, controller };
       this.live.set(session.id, runtime);
-      terminal.show();
+      await this.showTerminal(terminal);
       await controller.ready;
       this.changed();
     } catch (error) {
@@ -206,6 +210,27 @@ class Sessions {
     if (session.backend === 'herdr' && session.backendAlive) this.backend.focus(session.paneId).catch(() => {});
   }
 
+  async showTerminal(terminal) {
+    try { await showSession(this.vscode, terminal); }
+    catch (error) {
+      // A read-only workspace setting or unavailable layout command must not
+      // tear down a usable renderer or hide a successfully launched agent.
+      terminal.show();
+      this.reportError(new Error(`Could not restore session layout: ${error.message}`));
+    }
+  }
+
+  updateTerminalContext(terminal) {
+    const managed = [...this.live.values()].some(runtime => runtime.terminal === terminal && runtime.controller);
+    this.vscode.commands.executeCommand('setContext', 'herdr.sessionTerminalActive', managed).catch(this.reportError);
+  }
+
+  scroll(direction) {
+    const terminal = this.vscode.window.activeTerminal;
+    const runtime = [...this.live.values()].find(item => item.terminal === terminal);
+    runtime?.controller?.scroll(direction);
+  }
+
   async focus(id) {
     const session = this.find(id);
     if (!session) throw new Error('This session no longer exists.');
@@ -213,7 +238,7 @@ class Sessions {
       const runtime = this.live.get(id);
       if (!runtime) throw new Error('This legacy session has no attached terminal. Start a new session.');
       this.markSeen(id);
-      runtime.terminal.show();
+      await this.showTerminal(runtime.terminal);
       return;
     }
     if (session.endedAt) throw new Error('This session has ended and remains in history.');
@@ -228,6 +253,7 @@ class Sessions {
     for (const [id, runtime] of this.live) {
       if (runtime.terminal !== terminal) continue;
       this.live.delete(id);
+      this.updateTerminalContext(this.vscode.window.activeTerminal);
       runtime.controller?.dispose();
       if (this.find(id)?.backend !== 'herdr') this.update(id, { status: 'closed', agentState: 'idle', endedAt: Date.now() });
       else this.changed();
@@ -245,6 +271,7 @@ class Sessions {
   closeTerminal(id) {
     const runtime = this.live.get(id);
     this.live.delete(id);
+    this.updateTerminalContext(this.vscode.window.activeTerminal);
     runtime?.controller?.dispose();
     runtime?.terminal.dispose();
   }

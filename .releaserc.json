@@ -1,0 +1,16 @@
+{
+  "branches": ["main"],
+  "tagFormat": "v${version}",
+  "plugins": [
+    ["@semantic-release/commit-analyzer", { "preset": "conventionalcommits", "presetConfig": {} }],
+    ["@semantic-release/release-notes-generator", { "preset": "conventionalcommits", "presetConfig": {} }],
+    "./scripts/marketplace-release.js",
+    ["@semantic-release/github", {
+      "assets": [{ "path": "dist/herdr-workbench-marketplace.vsix", "name": "herdr-workbench-${nextRelease.version}.vsix" }],
+      "successCommentCondition": false,
+      "failCommentCondition": false,
+      "failTitle": false,
+      "releasedLabels": false
+    }]
+  ]
+}
